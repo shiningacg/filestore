@@ -15,5 +15,5 @@ type Bandwidth struct {
 	Upload        uint64
 	Download      uint64
 	TotalUpload   uint64
-	TotalDonwload uint64
+	TotalDownload uint64
 }

@@ -1,4 +1,4 @@
-module filesys
+module github.com/shiningacg/filestore
 
 go 1.14
 
