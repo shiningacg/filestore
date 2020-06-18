@@ -12,35 +12,29 @@ type Record struct {
 	Ip        string
 	FileID    string
 	Bandwidth uint64
-	Finish    bool
+	StartTime uint64
+	EndTime   uint64
 }
 
 type Gateway struct {
 	// 反馈chan
-	*Bandwidth
+	*GatewayMonitor
 	host string
 	md   *Global
 }
 
-func NewGateway(host string, s store.Store) *Gateway {
-	bd := NewHttpBandwidth(context.TODO())
+// 新建gateway
+func NewGateway(ctx context.Context, host string, s store.Store) *Gateway {
+	bd := NewMonitor(ctx)
 	g := &Gateway{
-		Bandwidth: bd,
-		host:      host,
-		md:        NewMiddleware(s, bd.Chan()),
+		GatewayMonitor: bd,
+		host:           host,
+		md:             NewMiddleware(s, bd.Chan()),
 	}
 	apicore.AddMiddleware(func() apicore.MiddleWare {
 		return g.md
 	})
 	return g
-}
-
-func (g *Gateway) Upload() uint64 {
-	return g.Bandwidth.current
-}
-
-func (g *Gateway) TotalUpload() uint64 {
-	return g.Bandwidth.total
 }
 
 func (g *Gateway) RunHttp(host string) error {

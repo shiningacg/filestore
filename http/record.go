@@ -2,44 +2,75 @@ package http
 
 import (
 	"context"
+	"github.com/shiningacg/filestore"
 	"time"
 )
 
-// httpBandwidth是通用的模块，用来处理http返回的信息
-type Bandwidth struct {
+// GatewayMonitor是通用的模块，用来处理http网关返回的信息
+type GatewayMonitor struct {
 	// 输入
-	ctx      context.Context
-	total    uint64
-	current  uint64
-	lastTime time.Time
-	input    chan *Record
+	ctx context.Context
+	// 流量
+	bandwidth        uint64
+	currentBandwidth uint64
+	// 访问数
+	visit        uint64
+	currentVisit uint64
+	requests     []*Record
+	input        chan *Record
 }
 
-func NewHttpBandwidth(ctx context.Context) *Bandwidth {
+func NewMonitor(ctx context.Context) *GatewayMonitor {
 	input := make(chan *Record, 100)
-	return &Bandwidth{ctx: ctx, input: input}
+	return &GatewayMonitor{ctx: ctx, input: input}
 }
 
-func (b *Bandwidth) Chan() chan<- *Record {
+func (b *GatewayMonitor) Chan() chan<- *Record {
 	return b.input
 }
 
-func (b *Bandwidth) Run() {
+func (b *GatewayMonitor) Run() {
 	for {
 		select {
 		case r := <-b.input:
-			b.total += r.Bandwidth
-			b.setCurrent(r)
+			b.addRecord(r)
 		case <-b.ctx.Done():
 			return
 		}
 	}
 }
 
-func (b *Bandwidth) setCurrent(r *Record) {
-	now := time.Now()
-	if now.Unix() != b.lastTime.Unix() {
-		b.lastTime = now
+func (b *GatewayMonitor) Gateway() filestore.Gateway {
+	b.delTimeout()
+	return filestore.Gateway{
+		Visit:        b.visit,
+		DayVisit:     b.currentVisit,
+		Bandwidth:    b.bandwidth,
+		DayBandwidth: b.currentBandwidth,
 	}
-	b.current += r.Bandwidth
+}
+
+func (b *GatewayMonitor) addRecord(r *Record) {
+	b.requests = append(b.requests, r)
+	b.visit += 1
+	b.currentVisit += 1
+	b.bandwidth += r.Bandwidth
+	b.currentBandwidth += r.Bandwidth
+}
+
+// 删除过期的信息
+func (b *GatewayMonitor) delTimeout() {
+	var updateTime int64 = 24 * 60 * 60
+	var index int
+	timeline := time.Now().Unix() - updateTime
+
+	for i, r := range b.requests {
+		if r.EndTime > uint64(timeline) {
+			break
+		}
+		b.currentBandwidth -= r.Bandwidth
+		b.currentVisit -= 1
+		index = i
+	}
+	b.requests = b.requests[index+1:]
 }
