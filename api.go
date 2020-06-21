@@ -1,6 +1,8 @@
 package filestore
 
-import "io"
+import (
+	"io"
+)
 
 // 文件交互接口
 type API interface {

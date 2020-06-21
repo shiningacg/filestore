@@ -13,3 +13,9 @@ type Store interface {
 	Stats() Stats
 	API() API
 }
+
+func main() {
+	var s Store
+	s.Stats().Bandwidth()
+	info := s.Stats().Space()
+}
