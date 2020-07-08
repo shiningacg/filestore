@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/boltdb/bolt"
+	store "github.com/shiningacg/filestore"
 	"log"
 	"time"
 )
@@ -24,6 +25,11 @@ func (f *DBFile) Json() []byte {
 
 func (f *DBFile) FromJson(b []byte) error {
 	return json.Unmarshal(b, f)
+}
+
+func (f *DBFile) FromStoreFile(file store.File) {
+	f.Name = file.FileName()
+	f.UUID = file.ID()
 }
 
 var (
