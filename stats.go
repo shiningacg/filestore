@@ -11,6 +11,7 @@ type Stats interface {
 
 // 储存空间情况数据结构
 type Space struct {
+	Cap   uint64
 	Total uint64
 	Free  uint64
 	Used  uint64
@@ -28,6 +29,8 @@ type Gateway struct {
 	Visit uint64
 	// 日访问量
 	DayVisit uint64
+	// 小时访问量
+	HourVisit uint64
 	// 总共流出流量
 	Bandwidth uint64
 	// 日流出流量
