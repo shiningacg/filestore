@@ -9,6 +9,38 @@ import (
 	"time"
 )
 
+type DBInfo struct {
+	// 总共存放的文件数量
+	InitTime uint64
+	FileNum  uint64
+	UsedSize uint64
+	FreeSize uint64
+	MaxSize  uint64
+}
+
+func (info *DBInfo) Json() []byte {
+	b, _ := json.Marshal(info)
+	return b
+}
+
+func (info *DBInfo) FromJson(data []byte) error {
+	return json.Unmarshal(data, info)
+}
+
+func (info *DBInfo) AddFile(file *DBFile) error {
+	if info.FreeSize < file.Size {
+		return errors.New("空间不足")
+	}
+	info.FreeSize -= file.Size
+	info.UsedSize += file.Size
+	return nil
+}
+
+func (info *DBInfo) DeleteFIle(file *DBFile) {
+	info.UsedSize -= file.Size
+	info.FreeSize += file.Size
+}
+
 // 这里是存放文件信息的结构体
 type DBFile struct {
 	Name    string
@@ -54,7 +86,7 @@ func OpenBoltDB(path string, logger *log.Logger) *BoltDB {
 				return errors.New("无法初始化数据库：" + err.Error())
 			}
 		}
-		return bucket.Put([]byte("info_init_time"), []byte(string(time.Now().Second())))
+		return bucket.Put([]byte("info"), []byte(string(time.Now().Second())))
 	})
 	if err != nil {
 		logger.Println(err)
@@ -74,6 +106,14 @@ type BoltDB struct {
 func (b *BoltDB) Add(file *DBFile) error {
 	if file := b.Get(file.UUID); file != nil && !file.Deleted {
 		return errors.New("文件已经记录过")
+	}
+	info := b.Info()
+	if info == nil {
+		return errors.New("获取存储信息失败")
+	}
+	err := info.AddFile(file)
+	if err != nil {
+		return err
 	}
 	return b.set(file)
 }
@@ -120,11 +160,48 @@ func (b *BoltDB) Delete(uuid string) error {
 		return nil
 	}
 	file.Deleted = true
+	info := b.Info()
+	info.DeleteFIle(file)
 	return b.set(file)
 }
 
 func (b *BoltDB) Close() error {
 	return b.db.Close()
+}
+
+// 对文件信息的操作
+func (b *BoltDB) Info() *DBInfo {
+	var info = &DBInfo{}
+	err := b.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(DefaultBucket)
+		if bucket == nil {
+			panic("无法找到指定bucket")
+		}
+		data := bucket.Get([]byte("info"))
+		err := info.FromJson(data)
+		if err != nil {
+			err = errors.New("获取存储信息失败：" + err.Error())
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		b.log.Println(err)
+		return nil
+	}
+	return info
+}
+
+func (b *BoltDB) setInfo(info *DBInfo) error {
+	return b.db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(DefaultBucket)
+		if bucket == nil {
+			err := errors.New("无法找到指定bucket")
+			b.log.Println(err.Error())
+			panic(err)
+		}
+		return bucket.Put([]byte("info"), info.Json())
+	})
 }
 
 // 覆盖写入
