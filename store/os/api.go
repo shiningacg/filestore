@@ -4,18 +4,10 @@ import (
 	"errors"
 	store "github.com/shiningacg/filestore"
 	"io"
-	"log"
 	"os"
 )
 
-type API struct {
-	storeManager StoreManager
-	baseGetUrl   string
-	storePath    string
-	logger       *log.Logger
-	gatewayAddr  string
-	db           *BoltDB
-}
+type API Store
 
 func (a *API) Get(uuid string) (store.File, error) {
 	dbFile := a.db.Get(uuid)
@@ -31,8 +23,8 @@ func (a *API) Get(uuid string) (store.File, error) {
 
 // 不嫩使用这里的file的size方法
 func (a *API) Add(file store.File) error {
-	dbfile := a.storeFileToDBFile(file)
-	f, err := os.Create(dbfile.Path)
+	dbFile := a.storeFileToDBFile(file)
+	f, err := os.Create(dbFile.Path)
 	if err != nil {
 		err = errors.New("无法创建文件：" + err.Error())
 		a.logger.Println(err)
@@ -43,8 +35,8 @@ func (a *API) Add(file store.File) error {
 		err = errors.New("写入文件错误：" + err.Error())
 		a.logger.Println(err)
 	}
-	dbfile.Size = uint64(n)
-	return a.db.Add(dbfile)
+	dbFile.Size = uint64(n)
+	return a.db.Add(dbFile)
 }
 
 func (a *API) storeFileToDBFile(file store.File) *DBFile {
@@ -72,6 +64,6 @@ func (a *API) fromDBFile(file *DBFile) *File {
 		a.logger.Println(err)
 		return nil
 	}
-	f.url = a.baseGetUrl + file.UUID
+	f.url = a.gateway.GetUrl(file.UUID)
 	return f
 }

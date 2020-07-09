@@ -30,6 +30,6 @@ func (g *Gateway) Run() error {
 	return http.ListenAndServe(g.addr, g)
 }
 
-func GetBaseUrl(addr string) string {
-	return fmt.Sprintf("http://%v/get/", addr)
+func (g *Gateway) GetUrl(uuid string) string {
+	return fmt.Sprintf("http://%v/get/%v", g.addr, uuid)
 }
