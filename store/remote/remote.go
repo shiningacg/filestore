@@ -1,16 +1,15 @@
 package remote
 
-import (
-	"filesys"
-)
+import store "github.com/shiningacg/filestore"
 
-type RemoteStore struct {
+type Store struct {
 }
 
-func (r RemoteStore) Stats() filestore.Stats {
+// 从etcd中获取
+func (s Store) Stats() store.Stats {
 	panic("implement me")
 }
 
-func (r RemoteStore) API() filestore.API {
+func (s Store) API() store.API {
 	panic("implement me")
 }
