@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	store "github.com/shiningacg/filestore"
+	"log"
 	"net/http"
 )
 
-func NewGateway(addr string, api store.API) *Gateway {
+func NewGateway(addr string, api store.API, logger *log.Logger) *Gateway {
 	return &Gateway{
+		log:     logger,
 		addr:    addr,
 		api:     api,
 		monitor: NewMonitor(context.TODO()),
@@ -16,6 +18,9 @@ func NewGateway(addr string, api store.API) *Gateway {
 }
 
 type Gateway struct {
+	// 负责日志控制
+	log *log.Logger
+	// 仓库api
 	// 负责数据统计
 	monitor *DefaultMonitor
 	addr    string
@@ -32,6 +37,7 @@ func (g *Gateway) BandWidth() *store.Gateway {
 }
 
 func (g *Gateway) Run() error {
+	go g.monitor.Run()
 	return http.ListenAndServe(g.addr, (*HttpServer)(g))
 }
 

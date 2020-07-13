@@ -2,14 +2,15 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"github.com/shiningacg/filestore"
+	"io"
 	"time"
 )
 
 const (
 	DAY  uint64 = 60 * 60 * 24
 	HOUR uint64 = 60 * 60
-	SEC  uint64 = 1
 )
 
 // GatewayMonitor是通用的模块，用来处理http网关返回的信息
@@ -58,6 +59,27 @@ func NewMonitor(ctx context.Context) *DefaultMonitor {
 	}
 }
 
+func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.Reader) (uint64, error) {
+	var total uint64
+	b.addRecord(&Record{
+		RequestID: r.RequestID,
+		Ip:        r.Ip,
+		FileID:    r.FileID,
+		StartTime: uint64(time.Now().Unix()),
+	})
+	n, err := copy(dst, src, func(i int) bool {
+		fmt.Println(i)
+		b.AddRecord(&Record{RequestID: r.RequestID, Bandwidth: uint64(i)})
+		total += uint64(i)
+		if total >= maxSize {
+			return true
+		}
+		return false
+	})
+	b.AddRecord(&Record{RequestID: r.RequestID, EndTime: uint64(time.Now().Unix())})
+	return n, err
+}
+
 func (b *DefaultMonitor) AddRecord(record *Record) {
 	if b.closed {
 		return
@@ -81,6 +103,7 @@ func (b *DefaultMonitor) Run() {
 
 // addRecord 把输入的record记录下并且及时更新gateway数据
 func (b *DefaultMonitor) addRecord(r *Record) {
+	fmt.Println("bd", r.Bandwidth)
 	var record *Record
 	// 通过id查找是否存在过记录,从后开始查询
 	for i := len(b.records) - 1; i >= 0; i-- {
@@ -130,6 +153,42 @@ func (b *DefaultMonitor) getRecord(duration uint64) []*Record {
 	}
 
 	return b.records[index:]
+}
+
+func copy(dst io.Writer, src io.Reader, stop func(int) bool) (uint64, error) {
+	var n, total int
+	var err error
+	// 创建缓存
+	var buffer = make([]byte, BufferSize)
+	for stop(n) {
+		var wt, w int
+		n, err = src.Read(buffer)
+		if err == io.EOF {
+			err = nil
+			break
+		}
+		if err != nil {
+			break
+		}
+		// 写入dst
+		for {
+			w, err = dst.Write(buffer[wt:n])
+			if err != nil {
+				break
+			}
+			wt += w
+			if wt == n {
+				break
+			}
+		}
+		// 计算总和
+		total += n
+	}
+	// 出现错误
+	if err != nil {
+		return 0, err
+	}
+	return uint64(total), nil
 }
 
 // Record 单次反馈数据
