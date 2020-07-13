@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	store "github.com/shiningacg/filestore"
 	"net/http"
@@ -8,28 +9,38 @@ import (
 
 func NewGateway(addr string, api store.API) *Gateway {
 	return &Gateway{
-		addr: addr,
-		api:  api,
+		addr:    addr,
+		api:     api,
+		monitor: NewMonitor(context.TODO()),
 	}
 }
 
 type Gateway struct {
-	addr string
-	api  store.API
+	// 负责数据统计
+	monitor *DefaultMonitor
+	addr    string
+	api     store.API
 }
 
-func (g *Gateway) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	panic("implement me")
-}
+/*
+	可供外部调用的方法
+*/
 
-func (g *Gateway) Gateway() store.Gateway {
-	panic("implement me")
+// 获取统计信息
+func (g *Gateway) BandWidth() *store.Gateway {
+	return g.monitor.Bandwidth()
 }
 
 func (g *Gateway) Run() error {
-	return http.ListenAndServe(g.addr, g)
+	return http.ListenAndServe(g.addr, (*HttpServer)(g))
 }
 
+// 传入一个uuid，返回下载地址
 func (g *Gateway) GetUrl(uuid string) string {
 	return fmt.Sprintf("http://%v/get/%v", g.addr, uuid)
+}
+
+// 传入一个uuid，获取上传地址
+func (g *Gateway) PostUrl(uuid string) string {
+	return fmt.Sprintf("http://%v/post/%v", g.addr, uuid)
 }
