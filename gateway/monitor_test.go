@@ -1,8 +1,12 @@
 package gateway
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"fmt"
 	store "github.com/shiningacg/filestore"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -96,4 +100,13 @@ func TestAddRecord(t *testing.T) {
 	if gotGateway := monitor.Bandwidth(); !reflect.DeepEqual(*wantGatway, *gotGateway) {
 		t.Fatal("gateway err ：", wantGatway, gotGateway)
 	}
+}
+
+func TestCopy(t *testing.T) {
+	f, _ := os.Create("test")
+	buffer := bufio.NewReader(bytes.NewBuffer([]byte("aaa")))
+	copy(f, buffer, func(i int) bool {
+		fmt.Println(i)
+		return true
+	})
 }

@@ -71,10 +71,13 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 		fmt.Println(i)
 		b.AddRecord(&Record{RequestID: r.RequestID, Bandwidth: uint64(i)})
 		total += uint64(i)
-		if total >= maxSize {
+		if maxSize == 0 {
 			return true
 		}
-		return false
+		if total >= maxSize {
+			return false
+		}
+		return true
 	})
 	b.AddRecord(&Record{RequestID: r.RequestID, EndTime: uint64(time.Now().Unix())})
 	return n, err

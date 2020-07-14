@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"io"
 	"net/http"
+	"os"
 )
 
 const (
@@ -38,6 +39,8 @@ func (h *HttpServer) Download(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, ErrFileNotFound)
 		return
 	}
+	// 设置head为attachment
+	w.Header().Set("Content-Disposition", "attachment; filename="+file.FileName())
 	// 开始传输文件
 	_, err = h.copyWithoutLimit(&Record{RequestID: requestID, FileID: fid}, w, file)
 	if err != nil {
@@ -58,13 +61,24 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	//info := h.getUploadInfo(token)
 	// 尝试读取文件
-	file := getFile(r)
+	file := h.getFile2(r)
 	if file == nil {
 		writeError(w, 400, ErrReadFormFile)
 		return
 	}
+	// 创建临时文件
+	f, err := os.Create(token)
+	if err != nil {
+		h.log.Println(err)
+		writeError(w, 500, ErrInternalServer)
+		return
+	}
+	_, err = h.copyWithLimit(MaxUploadSize, &Record{RequestID: token, FileID: token}, f, file)
+	if err != nil {
+		writeError(w, 400, ErrReadSocket)
+	}
 	file.UUID = token
-	err := h.api.Add(file)
+	err = h.api.Add(file)
 	if err != nil {
 		writeError(w, 400, ErrReadFormFile)
 		return
@@ -126,10 +140,26 @@ func getAction(url string) string {
 }
 
 // getFile 从request中
-func getFile(r *http.Request) *File {
+func (h *HttpServer) getFile(r *http.Request) *PartFile {
 	// 尝试读取文件,只读第一部分
+	part, err := r.MultipartReader()
+	file, err := part.NextPart()
+	if err != nil {
+		h.log.Println(err)
+		return nil
+	}
+	if file.FileName() == "" {
+		return nil
+	}
+	return &PartFile{
+		Part: file,
+	}
+}
+
+func (h *HttpServer) getFile2(r *http.Request) *File {
 	file, header, err := r.FormFile("file")
 	if err != nil {
+		h.log.Println(err)
 		return nil
 	}
 	return &File{
