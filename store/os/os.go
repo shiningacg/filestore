@@ -11,9 +11,9 @@ func NewOStore(config *StoreConfig, logger *log.Logger) *Store {
 		gateway:      nil,
 		storeManager: NewDefaultManager(config.StorePath),
 		logger:       logger,
-		db:           OpenBoltDB(config.StorePath, logger),
+		db:           OpenBoltDB(config.StorePath+"/store.dat", logger),
 	}
-	g := gateway.NewGateway(config.GatewayAddr, s.API())
+	g := gateway.NewGateway(config.GatewayAddr, s.API(), logger)
 	s.gateway = g
 	return s
 }
@@ -31,7 +31,7 @@ type Store struct {
 }
 
 func (s *Store) Stats() store.Stats {
-	panic("implement me")
+	return (*Stats)(s)
 }
 
 func (s *Store) API() store.API {

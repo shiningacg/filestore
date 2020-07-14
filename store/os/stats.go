@@ -7,7 +7,7 @@ import (
 
 type Stats Store
 
-func (s Stats) Space() *store.Space {
+func (s *Stats) Space() *store.Space {
 	space := &store.Space{}
 	dbInfo := s.db.Info()
 	if dbInfo != nil {
@@ -22,17 +22,10 @@ func (s Stats) Space() *store.Space {
 	return space
 }
 
-func (s Stats) Network() *store.Network {
+func (s *Stats) Network() *store.Network {
 	panic("implement me")
 }
 
-func (s Stats) Bandwidth() *store.Gateway {
-	return &store.Gateway{
-		Visit:         0,
-		DayVisit:      0,
-		HourVisit:     0,
-		Bandwidth:     0,
-		DayBandwidth:  0,
-		HourBandwidth: 0,
-	}
+func (s *Stats) Bandwidth() *store.Gateway {
+	return s.gateway.BandWidth()
 }

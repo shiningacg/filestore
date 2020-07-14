@@ -3,10 +3,18 @@ package os
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/boltdb/bolt"
 	store "github.com/shiningacg/filestore"
 	"log"
 	"time"
+)
+
+var (
+	ErrDataNotFound   = errors.New("无法找到数据")
+	ErrBucketNotFound = errors.New("无法找到指定bucket")
+	ErrDBInfoNotFound = errors.New("无法找到储存信息")
+	ErrDumpInfo       = errors.New("重复储存文件信息")
 )
 
 type DBInfo struct {
@@ -76,26 +84,17 @@ func OpenBoltDB(path string, logger *log.Logger) *BoltDB {
 		logger.Println(err)
 		panic(err)
 	}
+	DB := &BoltDB{
+		log: logger,
+		db:  db,
+	}
 	// 尝试初始化数据库
-	err = db.Update(func(tx *bolt.Tx) error {
-		var err error
-		bucket := tx.Bucket(DefaultBucket)
-		if bucket == nil {
-			bucket, err = tx.CreateBucket(DefaultBucket)
-			if err != nil {
-				return errors.New("无法初始化数据库：" + err.Error())
-			}
-		}
-		return bucket.Put([]byte("info"), []byte(string(time.Now().Second())))
-	})
+	err = DB.init(1024 * 1024 * 1024)
 	if err != nil {
 		logger.Println(err)
 		panic(err)
 	}
-	return &BoltDB{
-		log: logger,
-		db:  db,
-	}
+	return DB
 }
 
 type BoltDB struct {
@@ -105,11 +104,12 @@ type BoltDB struct {
 
 func (b *BoltDB) Add(file *DBFile) error {
 	if file := b.Get(file.UUID); file != nil && !file.Deleted {
-		return errors.New("文件已经记录过")
+		fmt.Println(file)
+		return ErrDumpInfo
 	}
 	info := b.Info()
 	if info == nil {
-		return errors.New("获取存储信息失败")
+		return ErrDBInfoNotFound
 	}
 	err := info.AddFile(file)
 	if err != nil {
@@ -123,13 +123,20 @@ func (b *BoltDB) Get(uuid string) *DBFile {
 	err := b.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(DefaultBucket)
 		if bucket == nil {
-			panic("无法找到指定bucket")
+			panic(ErrBucketNotFound)
 		}
 		data := bucket.Get([]byte(uuid))
+		if data == nil {
+			file = nil
+			return ErrDataNotFound
+		}
 		return file.FromJson(data)
 	})
-	if err != nil {
+	if err != nil && err != ErrDataNotFound {
 		b.log.Println(err)
+		return nil
+	}
+	if file == nil {
 		return nil
 	}
 	if file.Deleted {
@@ -167,6 +174,30 @@ func (b *BoltDB) Delete(uuid string) error {
 
 func (b *BoltDB) Close() error {
 	return b.db.Close()
+}
+
+// 初始化信息
+func (b *BoltDB) init(maxSize uint64) error {
+	info := &DBInfo{}
+	info.MaxSize = maxSize
+	// 初始化bucket
+	err := b.db.Update(func(tx *bolt.Tx) error {
+		var err error
+		bucket := tx.Bucket(DefaultBucket)
+		if bucket == nil {
+			bucket, err = tx.CreateBucket(DefaultBucket)
+			if err != nil {
+				return errors.New("无法初始化数据库：" + err.Error())
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	info.InitTime = uint64(time.Now().Unix())
+	info.FreeSize = info.MaxSize
+	return b.setInfo(info)
 }
 
 // 对文件信息的操作

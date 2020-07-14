@@ -1,6 +1,9 @@
 package gateway
 
-import "mime/multipart"
+import (
+	"mime/multipart"
+	"os"
+)
 
 type PartFile struct {
 	size uint64
@@ -36,5 +39,23 @@ func (f *File) ID() string {
 }
 
 func (f *File) Url() string {
+	panic("implement me")
+}
+
+type OSFile struct {
+	name string
+	uuid string
+	*os.File
+}
+
+func (f *OSFile) FileName() string {
+	return f.name
+}
+
+func (f *OSFile) ID() string {
+	return f.uuid
+}
+
+func (f *OSFile) Url() string {
 	panic("implement me")
 }

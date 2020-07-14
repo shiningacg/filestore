@@ -77,11 +77,19 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, 400, ErrReadSocket)
 	}
-	file.UUID = token
-	err = h.api.Add(file)
+	// 重置位置
+	f.Seek(0, io.SeekStart)
+	err = h.api.Add(&OSFile{name: file.Filename, uuid: token, File: f})
 	if err != nil {
+		h.log.Println(err)
 		writeError(w, 400, ErrReadFormFile)
 		return
+	}
+	// 删除缓存文件
+	f.Close()
+	err = os.Remove(token)
+	if err != nil {
+		h.log.Println(err)
 	}
 	h.writeSucResponse(w)
 }
@@ -144,6 +152,7 @@ func (h *HttpServer) getFile(r *http.Request) *PartFile {
 	// 尝试读取文件,只读第一部分
 	part, err := r.MultipartReader()
 	file, err := part.NextPart()
+	// TODO: file可能在err为nil的情况下为nil
 	if err != nil {
 		h.log.Println(err)
 		return nil

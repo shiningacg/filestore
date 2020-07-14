@@ -8,6 +8,9 @@ type StoreManager interface {
 }
 
 func NewDefaultManager(storePath string) *DefaultManager {
+	if storePath[len(storePath)-1:] != "/" {
+		storePath = storePath + "/"
+	}
 	return &DefaultManager{storePath: storePath}
 }
 
