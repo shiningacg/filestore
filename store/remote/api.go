@@ -1,28 +1,27 @@
 package remote
 
 import (
+	"context"
 	store "github.com/shiningacg/filestore"
+	"github.com/shiningacg/filestore/store/remote/rpc"
 )
 
 type API Store
 
-func (A API) Get(uuid string) (file store.File, err error) {
-	// 查询数据库，查看是否存在这样的文件
-	// 获取到信息，创建file文件
-	// 通过该id去寻找合适的节点获取url
-	// 返回
-	return
+func (a API) Get(uuid string) (file store.File, err error) {
+	pbFile, err := a.RemoteStoreClient.Get(context.TODO(), &rpc.UUID{UUID: uuid})
+	if err != nil {
+		return nil, err
+	}
+	return wrapPBFile(pbFile), nil
 }
 
-// remote不会调用这个方法
-func (A API) Add(file store.File) error {
-	return nil
+func (a API) Add(file store.File) error {
+	_, err := a.RemoteStoreClient.Add(context.TODO(), toPBFile(file))
+	return err
 }
 
-//
-func (A API) Remove(uuid string) error {
-	// 在数据库中查找，获取信息
-	// 标记删除
-	// 下发请求
-	return nil
+func (a API) Remove(uuid string) error {
+	_, err := a.RemoteStoreClient.Remove(context.TODO(), &rpc.UUID{UUID: uuid})
+	return err
 }

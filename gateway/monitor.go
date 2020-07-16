@@ -15,6 +15,7 @@ const (
 
 // GatewayMonitor是通用的模块，用来处理http网关返回的信息
 type DefaultMonitor struct {
+	// 统计总共的访问数据，每天和小时数据是计算生成的
 	visit     uint64
 	bandwidth uint64
 	// 输入
@@ -59,6 +60,7 @@ func NewMonitor(ctx context.Context) *DefaultMonitor {
 	}
 }
 
+// 协助拷贝数据，同时进行流量记录
 func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.Reader) (uint64, error) {
 	var total uint64
 	b.addRecord(&Record{
@@ -83,6 +85,7 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 	return n, err
 }
 
+// 多线程安全添加记录
 func (b *DefaultMonitor) AddRecord(record *Record) {
 	if b.closed {
 		return
@@ -90,6 +93,7 @@ func (b *DefaultMonitor) AddRecord(record *Record) {
 	b.input <- record
 }
 
+// 启动goroutine单线程处理记录
 func (b *DefaultMonitor) Run() {
 	// 开启定时任务
 	for {

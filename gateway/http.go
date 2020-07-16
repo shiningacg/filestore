@@ -66,19 +66,21 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, ErrReadFormFile)
 		return
 	}
-	// 创建临时文件
+	// 创建临时文件，可以考虑弄一个函数
 	f, err := os.Create(token)
 	if err != nil {
 		h.log.Println(err)
 		writeError(w, 500, ErrInternalServer)
 		return
 	}
+	// 开始读取
 	_, err = h.copyWithLimit(MaxUploadSize, &Record{RequestID: token, FileID: token}, f, file)
 	if err != nil {
 		writeError(w, 400, ErrReadSocket)
 	}
-	// 重置位置
+	// 重置文件的读取位置
 	f.Seek(0, io.SeekStart)
+	// 放入仓库中
 	err = h.api.Add(&OSFile{name: file.Filename, uuid: token, File: f})
 	if err != nil {
 		h.log.Println(err)
@@ -91,6 +93,7 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.log.Println(err)
 	}
+	// 写入回复
 	h.writeSucResponse(w)
 }
 
