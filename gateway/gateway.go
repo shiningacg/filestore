@@ -20,11 +20,11 @@ func NewGateway(addr string, api store.API, logger *log.Logger) *Gateway {
 type Gateway struct {
 	// 负责日志控制
 	log *log.Logger
-	// 仓库api
 	// 负责数据统计
 	monitor *DefaultMonitor
 	addr    string
-	api     store.API
+	// 存放文件的仓库，能够通过id存放和获取文件
+	api store.API
 }
 
 /*
@@ -37,6 +37,7 @@ func (g *Gateway) BandWidth() *store.Gateway {
 }
 
 func (g *Gateway) Run() error {
+
 	go g.monitor.Run()
 	return http.ListenAndServe(g.addr, (*HttpServer)(g))
 }

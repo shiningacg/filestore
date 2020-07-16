@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+option go_package = ".;rpc";
+
+service RemoteStore {
+  // 获取下载地址
+  rpc Get(UUID) returns (File) {}
+  // 获取上传地址
+  rpc Add(File) returns (Empty) {}
+  // 删除文件
+  rpc Remove(UUID) returns(Empty) {}
+  // 获取存储信息
+  rpc Space(Empty) returns (SpaceInfo) {}
+  // 查询网络状况
+  rpc Network(Empty) returns (NetworkInfo) {}
+  // 查询流量情况
+  rpc Bandwidth(Empty) returns (GatewayInfo) {}
+}
+
+message File {
+  string UUID = 1;
+  string Url = 2;
+  uint64 Size = 3;
+  string Name = 4;
+}
+
+message UUID {
+  string UUID = 1;
+}
+
+message Empty {}
+
+message SpaceInfo {
+  uint64 Cap = 1;
+  uint64 Total = 2;
+  uint64 Free = 3;
+  uint64 Used = 4;
+}
+
+message NetworkInfo {
+  uint64 Upload = 1;
+  uint64 Download = 2;
+}
+
+message GatewayInfo {
+  uint64 Visit = 1;
+  uint64 DayVisit = 2;
+  uint64 HourVisit = 3;
+  uint64 Bandwidth = 4;
+  uint64 DayBandwidth = 5;
+  uint64 HourBandwidth = 6;
+}
