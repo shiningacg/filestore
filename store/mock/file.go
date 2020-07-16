@@ -13,6 +13,10 @@ func (f File) FileName() string {
 	return f.name
 }
 
+func (f File) Size() uint64 {
+	return 0
+}
+
 func (f File) ID() string {
 	return f.id
 }

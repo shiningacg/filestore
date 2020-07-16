@@ -10,4 +10,5 @@ type File interface {
 	ID() string
 	// 重定向跳转链接
 	Url() string
+	Size() uint64
 }
