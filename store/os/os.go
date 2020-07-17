@@ -3,6 +3,7 @@ package os
 import (
 	store "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway"
+	"github.com/shiningacg/filestore/store/common"
 	"log"
 )
 
@@ -28,6 +29,7 @@ type Store struct {
 	storeManager StoreManager
 	logger       *log.Logger
 	db           *BoltDB
+	common.Adder
 }
 
 func (s *Store) Stats() store.Stats {

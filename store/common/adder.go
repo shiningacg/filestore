@@ -8,7 +8,7 @@ import (
 
 // Adder通过查库id来获取到文件，可以下载
 type Adder interface {
-	Find(uuid string) store.File
+	Find(file store.File) store.File
 }
 
 type IPFSFile struct {
@@ -38,16 +38,16 @@ type IPFSAdder struct {
 	ipfs.Store
 }
 
-func (a *IPFSAdder) Find(uuid string) store.File {
-	node := a.Get(uuid)
-	file, err := node.ToFile()
+func (a *IPFSAdder) Find(file store.File) store.File {
+	node := a.Get(file.ID())
+	f, err := node.ToFile()
 	if err != nil {
 		return nil
 	}
 	return &IPFSFile{
-		name: "",
-		url:  "",
-		File: file,
+		name: file.FileName(),
+		url:  file.Url(),
+		File: f,
 	}
 }
 
@@ -67,7 +67,7 @@ func (h HttpFile) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (h HttpFile) Close() error {
-	panic("implement me")
+	return h.Body.Close()
 }
 
 func (h HttpFile) FileName() string {
@@ -83,13 +83,13 @@ func (h HttpFile) Url() string {
 }
 
 func (h HttpFile) Size() uint64 {
-	panic("implement me")
+	return 0
 }
 
 // 通过ipfs去下载文件
 type HttpAdder struct{}
 
-func (I *HttpAdder) Find(uuid string) store.File {
+func (I *HttpAdder) Find(file store.File) store.File {
 	gatewayAddr := ""
 	// 通过主网关去查找文件
 	rsp, err := http.Get(gatewayAddr)
@@ -97,11 +97,11 @@ func (I *HttpAdder) Find(uuid string) store.File {
 		return nil
 	}
 	// 包装reader
-	file := HttpFile{
+	f := HttpFile{
 		Response: rsp,
-		name:     "",
-		url:      "",
-		id:       "",
+		name:     file.FileName(),
+		url:      file.Url(),
+		id:       file.ID(),
 	}
-	return file
+	return f
 }
