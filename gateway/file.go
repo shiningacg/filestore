@@ -1,61 +1,17 @@
 package gateway
 
 import (
+	fs "github.com/shiningacg/filestore"
 	"mime/multipart"
 	"os"
 )
 
-type PartFile struct {
-	size uint64
-	UUID string
-	*multipart.Part
+func NewMultipartFile(file multipart.File, header *multipart.FileHeader) fs.ReadableFile {
+	var bs = &fs.BaseFileStruct{}
+	bs.SetName(header.Filename)
+	return fs.NewReadableFile(bs, file)
 }
 
-func (f *PartFile) Seek(offset int64, whence int) (int64, error) {
-	panic("implement me")
-}
-
-func (f *PartFile) ID() string {
-	return f.UUID
-}
-
-func (f *PartFile) Url() string {
-	panic("implement me")
-}
-
-type File struct {
-	size uint64
-	UUID string
-	multipart.File
-	*multipart.FileHeader
-}
-
-func (f *File) FileName() string {
-	return f.FileHeader.Filename
-}
-
-func (f *File) ID() string {
-	return f.UUID
-}
-
-func (f *File) Url() string {
-	panic("implement me")
-}
-
-type OSFile struct {
-	name string
-	uuid string
-	*os.File
-}
-
-func (f *OSFile) FileName() string {
-	return f.name
-}
-
-func (f *OSFile) ID() string {
-	return f.uuid
-}
-
-func (f *OSFile) Url() string {
-	panic("implement me")
+func NewOSFile(fileStruct *fs.BaseFileStruct, file *os.File) fs.ReadableFile {
+	return fs.NewReadableFile(fileStruct, file)
 }

@@ -3,16 +3,16 @@ package gateway
 import (
 	"context"
 	"fmt"
-	store "github.com/shiningacg/filestore"
+	fs "github.com/shiningacg/filestore"
 	"log"
 	"net/http"
 )
 
-func NewGateway(addr string, api store.API, logger *log.Logger) *Gateway {
+func NewGateway(addr string, fs fs.FileFS, logger *log.Logger) *Gateway {
 	return &Gateway{
 		log:     logger,
 		addr:    addr,
-		api:     api,
+		fs:      fs,
 		monitor: NewMonitor(context.TODO()),
 	}
 }
@@ -24,20 +24,15 @@ type Gateway struct {
 	monitor *DefaultMonitor
 	addr    string
 	// 存放文件的仓库，能够通过id存放和获取文件
-	api store.API
+	fs fs.FileFS
 }
 
-/*
-	可供外部调用的方法
-*/
-
 // 获取统计信息
-func (g *Gateway) BandWidth() *store.Gateway {
+func (g *Gateway) BandWidth() *fs.Bandwidth {
 	return g.monitor.Bandwidth()
 }
 
 func (g *Gateway) Run() error {
-
 	go g.monitor.Run()
 	return http.ListenAndServe(g.addr, (*HttpServer)(g))
 }

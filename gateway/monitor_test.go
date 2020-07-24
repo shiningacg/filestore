@@ -89,7 +89,7 @@ func TestAddRecord(t *testing.T) {
 	}
 	// 测试最后测试一下输出是否正确
 	outputBandwidth := record1.Bandwidth + record2.Bandwidth + record3.Bandwidth
-	wantGatway := &store.Gateway{
+	wantGatway := &store.Bandwidth{
 		Visit:         1,
 		DayVisit:      1,
 		HourVisit:     1,
