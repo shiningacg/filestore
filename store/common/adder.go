@@ -1,14 +1,14 @@
 package common
 
 import (
-	store "github.com/shiningacg/filestore"
+	fs "github.com/shiningacg/filestore"
 	ipfs "github.com/shiningacg/sn-ipfs"
 	"net/http"
 )
 
 // Adder通过查库id来获取到文件，可以下载
 type Adder interface {
-	Find(file store.File) store.File
+	Find(file fs.BaseFile) fs.ReadableFile
 }
 
 type IPFSFile struct {
@@ -38,17 +38,14 @@ type IPFSAdder struct {
 	ipfs.Store
 }
 
-func (a *IPFSAdder) Find(file store.File) store.File {
-	node := a.Get(file.ID())
+func (a *IPFSAdder) Find(file fs.BaseFile) fs.ReadableFile {
+	node := a.Get(file.UUID())
 	f, err := node.ToFile()
+	f = f
 	if err != nil {
 		return nil
 	}
-	return &IPFSFile{
-		name: file.FileName(),
-		url:  file.Url(),
-		File: f,
-	}
+	return nil
 }
 
 type HttpFile struct {
@@ -89,7 +86,8 @@ func (h HttpFile) Size() uint64 {
 // 通过ipfs去下载文件
 type HttpAdder struct{}
 
-func (I *HttpAdder) Find(file store.File) store.File {
+func (I *HttpAdder) Find(file fs.BaseFile) fs.ReadableFile {
+	var bs = &fs.BaseFileStruct{}
 	gatewayAddr := ""
 	// 通过主网关去查找文件
 	rsp, err := http.Get(gatewayAddr)
@@ -97,11 +95,8 @@ func (I *HttpAdder) Find(file store.File) store.File {
 		return nil
 	}
 	// 包装reader
-	f := HttpFile{
-		Response: rsp,
-		name:     file.FileName(),
-		url:      file.Url(),
-		id:       file.ID(),
-	}
-	return f
+	bs.SetName(file.Name())
+	bs.SetUrl(file.Url())
+	bs.SetUUID(file.UUID())
+	return fs.NewReadableFile(bs, rsp.Body)
 }
