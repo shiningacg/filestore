@@ -24,10 +24,10 @@ func (s Stats) Network() *store.Network {
 	return toStoreNetwork(info)
 }
 
-func (s Stats) Bandwidth() *store.Gateway {
+func (s Stats) Gateway() *store.Bandwidth {
 	info, err := s.RemoteStoreClient.Bandwidth(context.TODO(), &rpc.Empty{})
 	if err != nil {
-		return &store.Gateway{}
+		return &store.Bandwidth{}
 	}
 	return toStoreBandwidth(info)
 }

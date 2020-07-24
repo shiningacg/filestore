@@ -21,7 +21,7 @@ func TestNewOStore(t *testing.T) {
 	go func() {
 		for {
 			time.Sleep(time.Second * 2)
-			fmt.Println(store.Stats().Bandwidth())
+			fmt.Println(store.Stats().Gateway())
 		}
 	}()
 	err := store.gateway.Run()

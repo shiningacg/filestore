@@ -1,15 +1,13 @@
 package filestore
 
-type StoreType uint8
+// 进行信息的交互，无法直接进行读取
+type InfoStore interface {
+	InfoFS
+	Stats
+}
 
-const (
-	// 通过系统文件系统实现
-	OS StoreType = iota
-	// 通过ipfs文件系统实现
-	IPFS
-)
-
-type Store interface {
-	Stats() Stats
-	API() API
+// 可以进行读取
+type FileStore interface {
+	FileFS
+	Stats
 }

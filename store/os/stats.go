@@ -26,6 +26,6 @@ func (s *Stats) Network() *store.Network {
 	panic("implement me")
 }
 
-func (s *Stats) Bandwidth() *store.Gateway {
+func (s *Stats) Gateway() *store.Bandwidth {
 	return s.gateway.BandWidth()
 }
