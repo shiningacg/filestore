@@ -84,6 +84,7 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	f.Seek(0, io.SeekStart)
 	// 记录信息
 	bs := &fs.BaseFileStruct{}
+	bs.SetUUID(token)
 	bs.SetName(header.Filename)
 	bs.SetSize(size)
 	// 放入仓库中

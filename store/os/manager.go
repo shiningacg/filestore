@@ -3,7 +3,7 @@ package os
 import store "github.com/shiningacg/filestore"
 
 type StoreManager interface {
-	GetStorePath(file store.File) string
+	GetStorePath(file store.BaseFile) string
 	GetBasePath() string
 }
 
@@ -18,8 +18,8 @@ type DefaultManager struct {
 	storePath string
 }
 
-func (d *DefaultManager) GetStorePath(file store.File) string {
-	return d.storePath + file.ID() + "-" + file.FileName()
+func (d *DefaultManager) GetStorePath(file store.BaseFile) string {
+	return d.storePath + file.UUID() + "-" + file.Name()
 }
 
 func (d *DefaultManager) GetBasePath() string {

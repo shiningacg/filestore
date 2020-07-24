@@ -2,7 +2,7 @@ package os
 
 import (
 	"errors"
-	store "github.com/shiningacg/filestore"
+	fs "github.com/shiningacg/filestore"
 	"io"
 	"os"
 )
@@ -12,75 +12,77 @@ var (
 	ErrFileNotFound = errors.New("无法找到文件")
 )
 
-type API Store
-
-func (a *API) Get(uuid string) (store.File, error) {
-	dbFile := a.db.Get(uuid)
+func (s *Store) Get(uuid string) (fs.ReadableFile, error) {
+	dbFile := s.db.Get(uuid)
 	if dbFile == nil {
 		return nil, errors.New("没有找到文件：" + uuid)
 	}
-	file := a.fromDBFile(dbFile)
+	file := s.fromDBFile(dbFile)
 	if file == nil {
-		return file, errors.New("文件丢失")
+		return nil, errors.New("文件丢失")
 	}
 	return file, nil
 }
 
 // 不嫩使用这里的file的size方法
-func (a *API) Add(file store.File) error {
+func (s *Store) Add(file fs.ReadableFile) error {
 	// 添加到os到文件一定要有id，没有则报错
-	if file.ID() == "" {
+	if file.UUID() == "" {
 		return ErrEmptyID
 	}
 	// 测试是否可读,如果不可读，则调用adder去创建一个可读到reader
 	if false {
-		f := a.Find(file)
+		f := s.Find(file)
 		if f == nil {
 			return ErrFileNotFound
 		}
 		file = f
 	}
-	dbFile := a.storeFileToDBFile(file)
+	dbFile := s.storeFileToDBFile(file)
 	f, err := os.Create(dbFile.Path)
 	if err != nil {
 		err = errors.New("无法创建文件：" + err.Error())
-		a.logger.Println(err)
+		s.logger.Println(err)
 		return err
 	}
 	n, err := io.Copy(f, file)
 	if err != nil {
 		err = errors.New("写入文件错误：" + err.Error())
-		a.logger.Println(err)
+		s.logger.Println(err)
 	}
 	dbFile.Size = uint64(n)
-	return a.db.Add(dbFile)
+	return s.db.Add(dbFile)
 }
 
-func (a *API) storeFileToDBFile(file store.File) *DBFile {
+func (s *Store) storeFileToDBFile(file fs.ReadableFile) *DBFile {
 	dbFile := &DBFile{
-		UUID: file.ID(),
-		Name: file.FileName(),
+		UUID: file.UUID(),
+		Name: file.Name(),
 	}
-	dbFile.Path = a.storeManager.GetStorePath(file)
+	dbFile.Path = s.storeManager.GetStorePath(file)
 	return dbFile
 }
 
-func (a *API) Remove(uuid string) error {
-	file := a.db.Get(uuid)
+func (s *Store) Remove(uuid string) error {
+	file := s.db.Get(uuid)
 	err := os.Remove(file.Path)
 	if err != nil {
 		err = errors.New("删除文件错误：" + err.Error())
-		a.logger.Println(err)
+		s.logger.Println(err)
 	}
-	return a.db.Delete(file.UUID)
+	return s.db.Delete(file.UUID)
 }
 
-func (a *API) fromDBFile(file *DBFile) *File {
-	f, err := fromDBFile(file)
+func (s *Store) fromDBFile(file *DBFile) fs.ReadableFile {
+	var bs = &fs.BaseFileStruct{}
+	f, err := os.Open(file.Path)
 	if err != nil {
-		a.logger.Println(err)
+		s.logger.Println(err)
 		return nil
 	}
-	f.url = a.gateway.GetUrl(file.UUID)
-	return f
+	bs.SetUUID(file.UUID)
+	bs.SetName(file.Name)
+	bs.SetSize(file.Size)
+	bs.SetUrl(s.gateway.GetUrl(file.UUID))
+	return fs.NewReadableFile(bs, f)
 }
