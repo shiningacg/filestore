@@ -8,11 +8,10 @@ import (
 	"net/http"
 )
 
-func NewGateway(addr string, fs fs.FileFS, logger *log.Logger) *Gateway {
+func NewGateway(addr string, logger *log.Logger) *Gateway {
 	return &Gateway{
 		log:     logger,
 		addr:    addr,
-		fs:      fs,
 		monitor: NewMonitor(context.TODO()),
 	}
 }
@@ -33,8 +32,15 @@ func (g *Gateway) BandWidth() *fs.Bandwidth {
 }
 
 func (g *Gateway) Run() error {
+	if g.fs == nil {
+		panic("空的仓库")
+	}
 	go g.monitor.Run()
 	return http.ListenAndServe(g.addr, (*HttpServer)(g))
+}
+
+func (g *Gateway) SetStore(store fs.FileStore) {
+	g.fs = store
 }
 
 // 传入一个uuid，返回下载地址
