@@ -2,19 +2,20 @@ package os
 
 import (
 	"github.com/shiningacg/filestore/gateway"
-	"github.com/shiningacg/filestore/store/common"
+	"github.com/shiningacg/filestore/store/remote"
 	"log"
 )
 
 func NewOStore(config *StoreConfig, logger *log.Logger) *Store {
+	g := gateway.NewGateway(config.GatewayAddr, logger)
 	s := &Store{
-		gateway:      nil,
+		gateway:      g,
 		storeManager: NewDefaultManager(config.StorePath),
 		logger:       logger,
 		db:           OpenBoltDB(config.StorePath+"/store.dat", logger),
 	}
-	g := gateway.NewGateway(config.GatewayAddr, s, logger)
-	s.gateway = g
+	g.SetStore(s)
+	go g.Run()
 	return s
 }
 
@@ -28,5 +29,5 @@ type Store struct {
 	storeManager StoreManager
 	logger       *log.Logger
 	db           *BoltDB
-	common.Adder
+	remote.Adder
 }

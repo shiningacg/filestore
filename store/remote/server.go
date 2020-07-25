@@ -2,18 +2,43 @@ package remote
 
 import (
 	"context"
-	store "github.com/shiningacg/filestore"
-	"github.com/shiningacg/filestore/gateway"
+	"errors"
+	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/store/remote/rpc"
+	"google.golang.org/grpc"
+	"log"
+	"net"
 )
 
+func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore) *StoreServer {
+	ss := &StoreServer{
+		addr:      addr,
+		Adder:     adder,
+		FileStore: fs,
+	}
+	sk, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("无法监听地址: %v %v", addr, err)
+	}
+	s := grpc.NewServer()
+	rpc.RegisterRemoteStoreServer(s, ss)
+	go func() {
+		err := s.Serve(sk)
+		if err != nil {
+			panic(err)
+		}
+	}()
+	return ss
+}
+
 type StoreServer struct {
-	*gateway.Gateway
-	store.Store
+	addr string
+	Adder
+	fs.FileStore
 }
 
 func (s StoreServer) Get(ctx context.Context, uuid *rpc.UUID) (*rpc.File, error) {
-	f, err := s.API().Get(uuid.UUID)
+	f, err := s.FileStore.Get(uuid.UUID)
 	if err != nil {
 		return nil, err
 	}
@@ -22,39 +47,39 @@ func (s StoreServer) Get(ctx context.Context, uuid *rpc.UUID) (*rpc.File, error)
 
 // add方法只能通过id来添加，不能read里面的内容
 func (s StoreServer) Add(ctx context.Context, file *rpc.File) (*rpc.Empty, error) {
-	return nil, s.API().Add(wrapPBFile(file))
+	rf := s.Find(wrapPBFile(file))
+	if rf == nil {
+		return nil, errors.New("无法下载指定文件")
+	}
+	return &rpc.Empty{}, s.FileStore.Add(rf)
 }
 
 func (s StoreServer) Remove(ctx context.Context, uuid *rpc.UUID) (*rpc.Empty, error) {
-	return nil, s.API().Remove(uuid.UUID)
+	return &rpc.Empty{}, s.FileStore.Remove(uuid.UUID)
 }
 
 func (s StoreServer) Space(ctx context.Context, empty *rpc.Empty) (*rpc.SpaceInfo, error) {
-	return toPBSpace(s.Stats().Space()), nil
+	return toPBSpace(s.FileStore.Space()), nil
 }
 
 func (s StoreServer) Network(ctx context.Context, empty *rpc.Empty) (*rpc.NetworkInfo, error) {
-	return toPBNetwork(s.Stats().Network()), nil
+	return toPBNetwork(s.FileStore.Network()), nil
 }
 
 func (s StoreServer) Bandwidth(ctx context.Context, empty *rpc.Empty) (*rpc.GatewayInfo, error) {
-	return toPBBandwidth(s.Stats().Bandwidth()), nil
+	return toPBBandwidth(s.FileStore.Gateway()), nil
 }
 
-func wrapPBFile(file *rpc.File) store.File {
-	return PBFile{File: file}
+func wrapPBFile(file *rpc.File) fs.BaseFile {
+	var bf = &fs.BaseFileStruct{}
+	bf.SetUUID(file.UUID)
+	bf.SetName(file.Name)
+	bf.SetSize(file.Size)
+	bf.SetUrl(file.Url)
+	return bf
 }
 
-func toPBFile(file store.File) *rpc.File {
-	return &rpc.File{
-		UUID: file.ID(),
-		Url:  file.Url(),
-		Size: file.Size(),
-		Name: file.FileName(),
-	}
-}
-
-func toPBSpace(space *store.Space) *rpc.SpaceInfo {
+func toPBSpace(space *fs.Space) *rpc.SpaceInfo {
 	return &rpc.SpaceInfo{
 		Cap:   space.Cap,
 		Total: space.Total,
@@ -63,30 +88,14 @@ func toPBSpace(space *store.Space) *rpc.SpaceInfo {
 	}
 }
 
-func toStoreSpace(info *rpc.SpaceInfo) *store.Space {
-	return &store.Space{
-		Cap:   info.Cap,
-		Total: info.Total,
-		Free:  info.Free,
-		Used:  info.Used,
-	}
-}
-
-func toPBNetwork(network *store.Network) *rpc.NetworkInfo {
+func toPBNetwork(network *fs.Network) *rpc.NetworkInfo {
 	return &rpc.NetworkInfo{
 		Upload:   network.Upload,
 		Download: network.Download,
 	}
 }
 
-func toStoreNetwork(info *rpc.NetworkInfo) *store.Network {
-	return &store.Network{
-		Upload:   info.Upload,
-		Download: info.Download,
-	}
-}
-
-func toPBBandwidth(gateway *store.Bandwidth) *rpc.GatewayInfo {
+func toPBBandwidth(gateway *fs.Bandwidth) *rpc.GatewayInfo {
 	return &rpc.GatewayInfo{
 		Visit:         gateway.Visit,
 		DayVisit:      gateway.DayVisit,
@@ -95,47 +104,4 @@ func toPBBandwidth(gateway *store.Bandwidth) *rpc.GatewayInfo {
 		DayBandwidth:  gateway.DayBandwidth,
 		HourBandwidth: gateway.HourBandwidth,
 	}
-}
-
-func toStoreBandwidth(info *rpc.GatewayInfo) *store.Bandwidth {
-	return &store.Bandwidth{
-		Visit:         info.Visit,
-		DayVisit:      info.DayVisit,
-		HourVisit:     info.HourVisit,
-		Bandwidth:     info.Bandwidth,
-		DayBandwidth:  info.DayVisit,
-		HourBandwidth: info.HourBandwidth,
-	}
-}
-
-type PBFile struct {
-	*rpc.File
-}
-
-func (f PBFile) Read(p []byte) (n int, err error) {
-	return 0, nil
-}
-
-func (f PBFile) Seek(offset int64, whence int) (int64, error) {
-	return 0, nil
-}
-
-func (f PBFile) Close() error {
-	return nil
-}
-
-func (f PBFile) FileName() string {
-	return f.Name
-}
-
-func (f PBFile) ID() string {
-	return f.UUID
-}
-
-func (f PBFile) Url() string {
-	return f.File.Url
-}
-
-func (f PBFile) Size() uint64 {
-	return f.File.Size
 }
