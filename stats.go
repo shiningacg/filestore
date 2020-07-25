@@ -6,7 +6,7 @@ type Stats interface {
 	// 查询网络状况
 	Network() *Network
 	// 查询http网关信息
-	Bandwidth() *Gateway
+	Gateway() *Bandwidth
 }
 
 // 储存空间情况数据结构
@@ -24,7 +24,8 @@ type Network struct {
 	Download uint64
 }
 
-type Gateway struct {
+// 流量情况
+type Bandwidth struct {
 	// 总共访问量
 	Visit uint64
 	// 日访问量

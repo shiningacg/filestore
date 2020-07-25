@@ -2,6 +2,7 @@ package os
 
 import (
 	"fmt"
+	fs "github.com/shiningacg/filestore"
 	"log"
 	"os"
 	"testing"
@@ -21,7 +22,7 @@ func TestNewOStore(t *testing.T) {
 	go func() {
 		for {
 			time.Sleep(time.Second * 2)
-			fmt.Println(store.Stats().Bandwidth())
+			fmt.Println(store.Gateway())
 		}
 	}()
 	err := store.gateway.Run()
@@ -31,13 +32,12 @@ func TestNewOStore(t *testing.T) {
 }
 
 func TestAPI_Add(t *testing.T) {
+	var bs = &fs.BaseFileStruct{}
 	f, _ := os.Open("./aaa")
+	bs.SetName("aaa")
+	bs.SetSize(100)
 	store := testOpenStore()
-	err := store.API().Add(&File{
-		name: "aaa",
-		id:   "aaac",
-		File: f,
-	})
+	err := store.Add(fs.NewReadableFile(bs, f))
 	if err != nil {
 		panic(err)
 	}

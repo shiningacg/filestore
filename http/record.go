@@ -40,9 +40,9 @@ func (b *GatewayMonitor) Run() {
 	}
 }
 
-func (b *GatewayMonitor) Gateway() filestore.Gateway {
+func (b *GatewayMonitor) Gateway() filestore.Bandwidth {
 	b.delTimeout()
-	return filestore.Gateway{
+	return filestore.Bandwidth{
 		Visit:        b.visit,
 		DayVisit:     b.currentVisit,
 		Bandwidth:    b.bandwidth,

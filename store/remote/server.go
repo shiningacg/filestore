@@ -86,7 +86,7 @@ func toStoreNetwork(info *rpc.NetworkInfo) *store.Network {
 	}
 }
 
-func toPBBandwidth(gateway *store.Gateway) *rpc.GatewayInfo {
+func toPBBandwidth(gateway *store.Bandwidth) *rpc.GatewayInfo {
 	return &rpc.GatewayInfo{
 		Visit:         gateway.Visit,
 		DayVisit:      gateway.DayVisit,
@@ -97,8 +97,8 @@ func toPBBandwidth(gateway *store.Gateway) *rpc.GatewayInfo {
 	}
 }
 
-func toStoreBandwidth(info *rpc.GatewayInfo) *store.Gateway {
-	return &store.Gateway{
+func toStoreBandwidth(info *rpc.GatewayInfo) *store.Bandwidth {
+	return &store.Bandwidth{
 		Visit:         info.Visit,
 		DayVisit:      info.DayVisit,
 		HourVisit:     info.HourVisit,

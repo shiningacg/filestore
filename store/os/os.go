@@ -1,7 +1,6 @@
 package os
 
 import (
-	store "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway"
 	"github.com/shiningacg/filestore/store/common"
 	"log"
@@ -14,7 +13,7 @@ func NewOStore(config *StoreConfig, logger *log.Logger) *Store {
 		logger:       logger,
 		db:           OpenBoltDB(config.StorePath+"/store.dat", logger),
 	}
-	g := gateway.NewGateway(config.GatewayAddr, s.API(), logger)
+	g := gateway.NewGateway(config.GatewayAddr, s, logger)
 	s.gateway = g
 	return s
 }
@@ -30,12 +29,4 @@ type Store struct {
 	logger       *log.Logger
 	db           *BoltDB
 	common.Adder
-}
-
-func (s *Store) Stats() store.Stats {
-	return (*Stats)(s)
-}
-
-func (s *Store) API() store.API {
-	return (*API)(s)
 }

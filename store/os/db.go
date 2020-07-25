@@ -67,9 +67,9 @@ func (f *DBFile) FromJson(b []byte) error {
 	return json.Unmarshal(b, f)
 }
 
-func (f *DBFile) FromStoreFile(file store.File) {
-	f.Name = file.FileName()
-	f.UUID = file.ID()
+func (f *DBFile) FromStoreFile(file store.BaseFile) {
+	f.Name = file.Name()
+	f.UUID = file.UUID()
 }
 
 var (

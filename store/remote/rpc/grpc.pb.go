@@ -319,7 +319,7 @@ type GatewayInfo struct {
 	Visit         uint64 `protobuf:"varint,1,opt,name=Visit,proto3" json:"Visit,omitempty"`
 	DayVisit      uint64 `protobuf:"varint,2,opt,name=DayVisit,proto3" json:"DayVisit,omitempty"`
 	HourVisit     uint64 `protobuf:"varint,3,opt,name=HourVisit,proto3" json:"HourVisit,omitempty"`
-	Bandwidth     uint64 `protobuf:"varint,4,opt,name=Bandwidth,proto3" json:"Bandwidth,omitempty"`
+	Bandwidth     uint64 `protobuf:"varint,4,opt,name=Gateway,proto3" json:"Gateway,omitempty"`
 	DayBandwidth  uint64 `protobuf:"varint,5,opt,name=DayBandwidth,proto3" json:"DayBandwidth,omitempty"`
 	HourBandwidth uint64 `protobuf:"varint,6,opt,name=HourBandwidth,proto3" json:"HourBandwidth,omitempty"`
 }
@@ -475,13 +475,13 @@ var file_grpc_proto_depIdxs = []int32{
 	1, // 2: RemoteStore.Remove:input_type -> UUID
 	2, // 3: RemoteStore.Space:input_type -> Empty
 	2, // 4: RemoteStore.Network:input_type -> Empty
-	2, // 5: RemoteStore.Bandwidth:input_type -> Empty
+	2, // 5: RemoteStore.Gateway:input_type -> Empty
 	0, // 6: RemoteStore.Get:output_type -> File
 	2, // 7: RemoteStore.Add:output_type -> Empty
 	2, // 8: RemoteStore.Remove:output_type -> Empty
 	3, // 9: RemoteStore.Space:output_type -> SpaceInfo
 	4, // 10: RemoteStore.Network:output_type -> NetworkInfo
-	5, // 11: RemoteStore.Bandwidth:output_type -> GatewayInfo
+	5, // 11: RemoteStore.Gateway:output_type -> GatewayInfo
 	6, // [6:12] is the sub-list for method output_type
 	0, // [0:6] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -669,7 +669,7 @@ func (c *remoteStoreClient) Network(ctx context.Context, in *Empty, opts ...grpc
 
 func (c *remoteStoreClient) Bandwidth(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GatewayInfo, error) {
 	out := new(GatewayInfo)
-	err := c.cc.Invoke(ctx, "/RemoteStore/Bandwidth", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/RemoteStore/Gateway", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -712,7 +712,7 @@ func (*UnimplementedRemoteStoreServer) Network(context.Context, *Empty) (*Networ
 	return nil, status.Errorf(codes.Unimplemented, "method Network not implemented")
 }
 func (*UnimplementedRemoteStoreServer) Bandwidth(context.Context, *Empty) (*GatewayInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Bandwidth not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method Gateway not implemented")
 }
 
 func RegisterRemoteStoreServer(s *grpc.Server, srv RemoteStoreServer) {
@@ -819,7 +819,7 @@ func _RemoteStore_Bandwidth_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/RemoteStore/Bandwidth",
+		FullMethod: "/RemoteStore/Gateway",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RemoteStoreServer).Bandwidth(ctx, req.(*Empty))
@@ -852,7 +852,7 @@ var _RemoteStore_serviceDesc = grpc.ServiceDesc{
 			Handler:    _RemoteStore_Network_Handler,
 		},
 		{
-			MethodName: "Bandwidth",
+			MethodName: "Gateway",
 			Handler:    _RemoteStore_Bandwidth_Handler,
 		},
 	},

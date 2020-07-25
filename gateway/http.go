@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	fs "github.com/shiningacg/filestore"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 )
@@ -34,13 +36,13 @@ func (h *HttpServer) Download(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, ErrFileNotFound)
 		return
 	}
-	file, err := h.api.Get(fid)
+	file, err := h.fs.Get(fid)
 	if err != nil {
 		writeError(w, 400, ErrFileNotFound)
 		return
 	}
 	// 设置head为attachment
-	w.Header().Set("Content-Disposition", "attachment; filename="+file.FileName())
+	w.Header().Set("Content-Disposition", "attachment; filename="+file.Name())
 	// 开始传输文件
 	_, err = h.copyWithoutLimit(&Record{RequestID: requestID, FileID: fid}, w, file)
 	if err != nil {
@@ -61,8 +63,8 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	//info := h.getUploadInfo(token)
 	// 尝试读取文件
-	file := h.getFile2(r)
-	if file == nil {
+	file, header, err := h.getFile(r)
+	if err != nil {
 		writeError(w, 400, ErrReadFormFile)
 		return
 	}
@@ -74,14 +76,19 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 开始读取
-	_, err = h.copyWithLimit(MaxUploadSize, &Record{RequestID: token, FileID: token}, f, file)
+	size, err := h.copyWithLimit(MaxUploadSize, &Record{RequestID: token, FileID: token}, f, file)
 	if err != nil {
 		writeError(w, 400, ErrReadSocket)
 	}
 	// 重置文件的读取位置
 	f.Seek(0, io.SeekStart)
+	// 记录信息
+	bs := &fs.BaseFileStruct{}
+	bs.SetUUID(token)
+	bs.SetName(header.Filename)
+	bs.SetSize(size)
 	// 放入仓库中
-	err = h.api.Add(&OSFile{name: file.Filename, uuid: token, File: f})
+	err = h.fs.Add(fs.NewReadableFile(bs, f))
 	if err != nil {
 		h.log.Println(err)
 		writeError(w, 400, ErrReadFormFile)
@@ -150,34 +157,13 @@ func getAction(url string) string {
 	return ""
 }
 
-// getFile 从request中
-func (h *HttpServer) getFile(r *http.Request) *PartFile {
-	// 尝试读取文件,只读第一部分
-	part, err := r.MultipartReader()
-	file, err := part.NextPart()
-	// TODO: file可能在err为nil的情况下为nil
-	if err != nil {
-		h.log.Println(err)
-		return nil
-	}
-	if file.FileName() == "" {
-		return nil
-	}
-	return &PartFile{
-		Part: file,
-	}
-}
-
-func (h *HttpServer) getFile2(r *http.Request) *File {
+func (h *HttpServer) getFile(r *http.Request) (multipart.File, *multipart.FileHeader, error) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		h.log.Println(err)
-		return nil
+		return nil, nil, err
 	}
-	return &File{
-		File:       file,
-		FileHeader: header,
-	}
+	return file, header, nil
 }
 
 // writeError 快捷回复用户消息

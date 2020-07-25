@@ -5,9 +5,7 @@ import (
 	"github.com/shiningacg/filestore/store/common"
 )
 
-type Stats Store
-
-func (s *Stats) Space() *store.Space {
+func (s *Store) Space() *store.Space {
 	space := &store.Space{}
 	dbInfo := s.db.Info()
 	if dbInfo != nil {
@@ -22,10 +20,10 @@ func (s *Stats) Space() *store.Space {
 	return space
 }
 
-func (s *Stats) Network() *store.Network {
+func (s *Store) Network() *store.Network {
 	panic("implement me")
 }
 
-func (s *Stats) Bandwidth() *store.Gateway {
+func (s *Store) Gateway() *store.Bandwidth {
 	return s.gateway.BandWidth()
 }

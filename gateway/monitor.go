@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-	"fmt"
 	"github.com/shiningacg/filestore"
 	"io"
 	"time"
@@ -27,7 +26,7 @@ type DefaultMonitor struct {
 	closed bool
 }
 
-func (b *DefaultMonitor) Bandwidth() *filestore.Gateway {
+func (b *DefaultMonitor) Bandwidth() *filestore.Bandwidth {
 	b.delTimeout()
 	calculate := func(rcds []*Record) uint64 {
 		var bandwidth uint64
@@ -41,7 +40,7 @@ func (b *DefaultMonitor) Bandwidth() *filestore.Gateway {
 	hourVisit := len(hourRecords)
 	dayVisit := len(b.records)
 	dayBandwidth := calculate(b.records)
-	return &filestore.Gateway{
+	return &filestore.Bandwidth{
 		Visit:         b.visit,
 		DayVisit:      uint64(dayVisit),
 		HourVisit:     uint64(hourVisit),
@@ -70,7 +69,6 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 		StartTime: uint64(time.Now().Unix()),
 	})
 	n, err := copy(dst, src, func(i int) bool {
-		fmt.Println(i)
 		b.AddRecord(&Record{RequestID: r.RequestID, Bandwidth: uint64(i)})
 		total += uint64(i)
 		if maxSize == 0 {
@@ -110,7 +108,6 @@ func (b *DefaultMonitor) Run() {
 
 // addRecord 把输入的record记录下并且及时更新gateway数据
 func (b *DefaultMonitor) addRecord(r *Record) {
-	fmt.Println("bd", r.Bandwidth)
 	var record *Record
 	// 通过id查找是否存在过记录,从后开始查询
 	for i := len(b.records) - 1; i >= 0; i-- {
