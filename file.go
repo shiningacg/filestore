@@ -14,12 +14,16 @@ var (
 type BaseFile interface {
 	// 全局文件id
 	UUID() string
+	SetUUID(uuid string)
 	// 文件名
 	Name() string
+	SetName(name string)
 	// 文件大小
 	Size() uint64
+	SetSize(size uint64)
 	// 可供下载的地址
 	Url() string
+	SetUrl(url string)
 }
 
 // 可以直接读取的文件
@@ -59,7 +63,7 @@ func (b *BaseFileStruct) SetUrl(url string) {
 }
 
 func (b *BaseFileStruct) Name() string {
-	return b.uuid
+	return b.name
 }
 
 func (b *BaseFileStruct) Size() uint64 {
