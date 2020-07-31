@@ -65,6 +65,9 @@ func (s *Store) storeFileToDBFile(file fs.ReadableFile) *DBFile {
 
 func (s *Store) Remove(uuid string) error {
 	file := s.db.Get(uuid)
+	if file == nil {
+		return nil
+	}
 	err := os.Remove(file.Path)
 	if err != nil {
 		err = errors.New("删除文件错误：" + err.Error())
