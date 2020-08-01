@@ -4,17 +4,19 @@ import (
 	"context"
 	"errors"
 	fs "github.com/shiningacg/filestore"
+	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/filestore/store/remote/rpc"
 	"google.golang.org/grpc"
 	"log"
 	"net"
 )
 
-func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore) *StoreServer {
+func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore, r *common.Reporter) *StoreServer {
 	ss := &StoreServer{
 		addr:      addr,
 		Adder:     adder,
 		FileStore: fs,
+		Reporter:  r,
 	}
 	sk, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -28,6 +30,13 @@ func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore) *StoreServer 
 			panic(err)
 		}
 	}()
+	go func() {
+		ss.UpdateInfo(ss.report())
+		err := ss.KeepAlive(context.TODO())
+		if err != nil {
+			panic(err)
+		}
+	}()
 	return ss
 }
 
@@ -35,6 +44,15 @@ type StoreServer struct {
 	addr string
 	Adder
 	fs.FileStore
+	*common.Reporter
+}
+
+func (s StoreServer) report() *common.NodeInfo {
+	return &common.NodeInfo{
+		NodeId:   "center",
+		NodeType: "store",
+		GRPCAddr: s.addr,
+	}
 }
 
 func (s StoreServer) Get(ctx context.Context, uuid *rpc.UUID) (*rpc.File, error) {

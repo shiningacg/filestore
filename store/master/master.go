@@ -8,8 +8,13 @@ import (
 	"github.com/shiningacg/filestore/store/remote"
 )
 
+func NewMaster(master *common.Master) *Master {
+	return &Master{stores: make(map[string]fs.InfoStore), etcd: master}
+}
+
 type Master struct {
 	stores map[string]fs.InfoStore
+	etcd   *common.Master
 }
 
 func (m *Master) Get(uuid string) (fs.BaseFile, error) {
@@ -20,6 +25,9 @@ func (m *Master) Get(uuid string) (fs.BaseFile, error) {
 		if n.Upload <= network.Upload {
 			store = s
 		}
+	}
+	if store == nil {
+		return nil, errors.New("没有存储节点在线")
 	}
 	return store.Get(uuid)
 }
@@ -34,14 +42,14 @@ func (m *Master) Add(file fs.BaseFile) error {
 }
 
 func (m *Master) Remove(uuid string) error {
-	var error error
+	var e error
 	for _, store := range m.stores {
 		err := store.Remove(uuid)
 		if err != nil {
-			error = err
+			e = err
 		}
 	}
-	return error
+	return e
 }
 
 // 同理可得

@@ -12,10 +12,9 @@ import (
 
 // 用于汇报节点信息
 type NodeInfo struct {
-	NodeId      string
-	NodeType    string
-	GRPCAddr    string
-	GatewayAddr string
+	NodeId   string
+	NodeType string
+	GRPCAddr string
 }
 
 func (n *NodeInfo) Key() string {
@@ -46,15 +45,14 @@ type EtcdConfig struct {
 	Password string
 }
 
-func NewMaster(config *EtcdConfig, handler MasterHandler, key string) *Master {
+func NewMaster(config *EtcdConfig, key string) *Master {
 	cl, err := clientv3.New(translateConfig(config))
 	if err != nil {
 		panic(fmt.Errorf("无法连接etcd:%v", err))
 	}
 	return &Master{
-		MasterHandler: handler,
-		w:             clientv3.NewWatcher(cl),
-		key:           key,
+		w:   clientv3.NewWatcher(cl),
+		key: key,
 	}
 }
 
@@ -71,6 +69,10 @@ type Master struct {
 
 func (m *Master) Run(ctx context.Context) {
 	m.watch(ctx)
+}
+
+func (m *Master) SetHandler(handler MasterHandler) {
+	m.MasterHandler = handler
 }
 
 func (m *Master) watch(ctx context.Context) {

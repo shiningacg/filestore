@@ -12,14 +12,12 @@ func TestNewEtcdReporter(t *testing.T) {
 		EndPoint: []string{"127.0.0.1:2379"},
 	})
 	info := &NodeInfo{
-		NodeId:      "aaa",
-		NodeType:    "store",
-		GRPCAddr:    "11",
-		GatewayAddr: "22",
+		NodeId:   "aaa",
+		NodeType: "store",
+		GRPCAddr: "11",
 	}
 	reporter.UpdateInfo(info)
 	go reporter.KeepAlive(context.TODO())
-	info.GatewayAddr = "33"
 	time.Sleep(time.Second)
 	reporter.UpdateInfo(info)
 	select {}
@@ -38,6 +36,7 @@ func (m *MockMaster) Offline(info *NodeInfo) {
 func TestNewMaster(t *testing.T) {
 	master := NewMaster(&EtcdConfig{
 		EndPoint: []string{"127.0.0.1:2379"},
-	}, &MockMaster{}, "/store/")
+	}, "/store/")
+	master.SetHandler(&MockMaster{})
 	master.Run(context.TODO())
 }
