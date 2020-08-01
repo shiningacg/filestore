@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
-	store "github.com/shiningacg/filestore"
-	"log"
+	fs "github.com/shiningacg/filestore"
+	"github.com/shiningacg/mygin-frame-libs/log"
 	"time"
 )
 
@@ -67,7 +67,7 @@ func (f *DBFile) FromJson(b []byte) error {
 	return json.Unmarshal(b, f)
 }
 
-func (f *DBFile) FromStoreFile(file store.BaseFile) {
+func (f *DBFile) FromStoreFile(file fs.BaseFile) {
 	f.Name = file.Name()
 	f.UUID = file.UUID()
 }
@@ -81,7 +81,7 @@ var (
 func OpenBoltDB(path string, logger *log.Logger) *BoltDB {
 	db, err := bolt.Open(path, 0600, nil)
 	if err != nil {
-		logger.Println(err)
+		logger.Fatal(err)
 		panic(err)
 	}
 	DB := &BoltDB{
@@ -91,7 +91,7 @@ func OpenBoltDB(path string, logger *log.Logger) *BoltDB {
 	// 尝试初始化数据库
 	err = DB.init(1024 * 1024 * 1024)
 	if err != nil {
-		logger.Println(err)
+		logger.Fatal(err)
 		panic(err)
 	}
 	return DB
@@ -133,7 +133,7 @@ func (b *BoltDB) Get(uuid string) *DBFile {
 		return file.FromJson(data)
 	})
 	if err != nil && err != ErrDataNotFound {
-		b.log.Println(err)
+		b.log.Fatal(err)
 		return nil
 	}
 	if file == nil {
@@ -217,7 +217,7 @@ func (b *BoltDB) Info() *DBInfo {
 		return nil
 	})
 	if err != nil {
-		b.log.Println(err)
+		b.log.Fatal(err)
 		return nil
 	}
 	return info
@@ -228,7 +228,7 @@ func (b *BoltDB) setInfo(info *DBInfo) error {
 		bucket := tx.Bucket(DefaultBucket)
 		if bucket == nil {
 			err := errors.New("无法找到指定bucket")
-			b.log.Println(err.Error())
+			b.log.Fatal(err.Error())
 			panic(err)
 		}
 		return bucket.Put([]byte("info"), info.Json())
@@ -241,7 +241,7 @@ func (b *BoltDB) set(file *DBFile) error {
 		bucket := tx.Bucket(DefaultBucket)
 		if bucket == nil {
 			err := errors.New("无法找到指定bucket")
-			b.log.Println(err.Error())
+			b.log.Fatal(err.Error())
 			panic(err)
 		}
 		return bucket.Put([]byte(file.UUID), file.Json())

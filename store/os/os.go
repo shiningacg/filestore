@@ -3,7 +3,7 @@ package os
 import (
 	"github.com/shiningacg/filestore/gateway"
 	"github.com/shiningacg/filestore/store/remote"
-	"log"
+	"github.com/shiningacg/mygin-frame-libs/log"
 )
 
 func NewOStore(config *StoreConfig, logger *log.Logger) *Store {

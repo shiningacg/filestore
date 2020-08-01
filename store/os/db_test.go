@@ -2,14 +2,13 @@ package os
 
 import (
 	"fmt"
-	"log"
-	"os"
+	"github.com/shiningacg/mygin-frame-libs/log"
 	"testing"
 )
 
 func testOpenDB() *BoltDB {
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
-	return OpenBoltDB("test.db", logger)
+	log.OpenLog(&log.Config{})
+	return OpenBoltDB("test.db", log.Default())
 }
 
 func TestBoltDB_AddFile(t *testing.T) {

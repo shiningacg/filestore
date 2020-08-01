@@ -3,16 +3,18 @@ package os
 import (
 	"fmt"
 	fs "github.com/shiningacg/filestore"
-	"log"
+
+	"github.com/shiningacg/mygin-frame-libs/log"
 	"os"
 	"testing"
 	"time"
 )
 
 func testOpenStore() *Store {
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
+	log.OpenLog(&log.Config{})
+	logger := log.Default()
 	return NewOStore(&StoreConfig{
-		GatewayAddr: ":8888",
+		GatewayAddr: ":8887",
 		StorePath:   ".",
 	}, logger)
 }

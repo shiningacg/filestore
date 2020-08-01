@@ -42,13 +42,13 @@ func (s *Store) Add(file fs.ReadableFile) error {
 	f, err := os.Create(dbFile.Path)
 	if err != nil {
 		err = errors.New("无法创建文件：" + err.Error())
-		s.logger.Println(err)
+		s.logger.Fatal(err)
 		return err
 	}
 	n, err := io.Copy(f, file)
 	if err != nil {
 		err = errors.New("写入文件错误：" + err.Error())
-		s.logger.Println(err)
+		s.logger.Fatal(err)
 	}
 	dbFile.Size = uint64(n)
 	return s.db.Add(dbFile)
@@ -71,7 +71,7 @@ func (s *Store) Remove(uuid string) error {
 	err := os.Remove(file.Path)
 	if err != nil {
 		err = errors.New("删除文件错误：" + err.Error())
-		s.logger.Println(err)
+		s.logger.Fatal(err)
 	}
 	return s.db.Delete(file.UUID)
 }
@@ -80,7 +80,7 @@ func (s *Store) fromDBFile(file *DBFile) fs.ReadableFile {
 	var bs = &fs.BaseFileStruct{}
 	f, err := os.Open(file.Path)
 	if err != nil {
-		s.logger.Println(err)
+		s.logger.Fatal(err)
 		return nil
 	}
 	bs.SetUUID(file.UUID)

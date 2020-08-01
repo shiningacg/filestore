@@ -71,7 +71,7 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	// 创建临时文件，可以考虑弄一个函数
 	f, err := os.Create(token)
 	if err != nil {
-		h.log.Println(err)
+		h.log.Fatal(err)
 		writeError(w, 500, ErrInternalServer)
 		return
 	}
@@ -90,7 +90,7 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	// 放入仓库中
 	err = h.fs.Add(fs.NewReadableFile(bs, f))
 	if err != nil {
-		h.log.Println(err)
+		h.log.Fatal(err)
 		writeError(w, 400, ErrReadFormFile)
 		return
 	}
@@ -98,7 +98,7 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	f.Close()
 	err = os.Remove(token)
 	if err != nil {
-		h.log.Println(err)
+		h.log.Fatal(err)
 	}
 	// 写入回复
 	h.writeSucResponse(w)
@@ -134,7 +134,7 @@ func (h *HttpServer) copyWithoutLimit(r *Record, dst io.Writer, src io.Reader) (
 
 func (h *HttpServer) writeErrorResponse(w http.ResponseWriter, code int, err error) {
 	// 输出错误日志
-	h.log.Println(err)
+	h.log.Fatal(err)
 	w.WriteHeader(code)
 	_, _ = w.Write([]byte(err.Error()))
 }
@@ -160,7 +160,7 @@ func getAction(url string) string {
 func (h *HttpServer) getFile(r *http.Request) (multipart.File, *multipart.FileHeader, error) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		h.log.Println(err)
+		h.log.Fatal(err)
 		return nil, nil, err
 	}
 	return file, header, nil

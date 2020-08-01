@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	fs "github.com/shiningacg/filestore"
-	"log"
+	"github.com/shiningacg/mygin-frame-libs/log"
 	"net/http"
 )
 
