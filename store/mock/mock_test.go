@@ -3,14 +3,14 @@ package mock
 import (
 	"fmt"
 	"github.com/shiningacg/filestore/gateway"
-	"log"
-	"os"
+	"github.com/shiningacg/mygin-frame-libs/log"
 	"testing"
 	"time"
 )
 
 func MewStore() *Store {
-	g := gateway.NewGateway(":8888", log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile))
+	log.OpenLog(&log.Config{})
+	g := gateway.NewGateway(":8888", gateway.MockChecker{}, log.Default())
 	go func() {
 		for {
 			fmt.Println(g.BandWidth())
@@ -29,7 +29,8 @@ func MewStore() *Store {
 }
 
 func TestApp(t *testing.T) {
-	g := gateway.NewGateway(":8888", log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile))
+	log.OpenLog(&log.Config{})
+	g := gateway.NewGateway(":8888", gateway.MockChecker{}, log.Default())
 	go func() {
 		for {
 			fmt.Println(g.BandWidth())

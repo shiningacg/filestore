@@ -2,6 +2,8 @@ package gateway
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/shiningacg/filestore"
 	"io"
 	"time"
@@ -10,6 +12,10 @@ import (
 const (
 	DAY  uint64 = 60 * 60 * 24
 	HOUR uint64 = 60 * 60
+)
+
+var (
+	ErrReachMaxSize = errors.New("超过数据大小限制")
 )
 
 // GatewayMonitor是通用的模块，用来处理http网关返回的信息
@@ -71,6 +77,7 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 	n, err := copy(dst, src, func(i int) bool {
 		b.AddRecord(&Record{RequestID: r.RequestID, Bandwidth: uint64(i)})
 		total += uint64(i)
+		fmt.Println(total, maxSize)
 		if maxSize == 0 {
 			return true
 		}
@@ -80,6 +87,9 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 		return true
 	})
 	b.AddRecord(&Record{RequestID: r.RequestID, EndTime: uint64(time.Now().Unix())})
+	if n > maxSize {
+		return n, ErrReachMaxSize
+	}
 	return n, err
 }
 
