@@ -3,20 +3,24 @@ package gateway
 import (
 	"context"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/mygin-frame-libs/log"
 	"net/http"
 )
 
-func NewGateway(addr string, logger *log.Logger) *Gateway {
+func NewGateway(addr string, checker Checker, logger *log.Logger) *Gateway {
 	return &Gateway{
 		log:     logger,
 		addr:    addr,
+		checker: checker,
 		monitor: NewMonitor(context.TODO()),
 	}
 }
 
 type Gateway struct {
+	checker Checker
+	redis   *redis.Client
 	// 负责日志控制
 	log *log.Logger
 	// 负责数据统计

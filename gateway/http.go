@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	MaxUploadSize = 1024 * 1024 * 1024 * 10
-	BufferSize    = 1024 * 1024 * 128
+	BufferSize = 1024 * 1024 * 128
 )
 
 var (
@@ -61,7 +60,11 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, ErrInvalidToken)
 		return
 	}
-	//info := h.getUploadInfo(token)
+	checkResult, err := h.checker.Get(token)
+	if err != nil {
+		writeError(w, 400, ErrInvalidToken)
+		return
+	}
 	// 尝试读取文件
 	file, header, err := h.getFile(r)
 	if err != nil {
@@ -75,10 +78,23 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 500, ErrInternalServer)
 		return
 	}
+	// 删除缓存文件
+	defer func() {
+		f.Close()
+		err = os.Remove(token)
+		if err != nil {
+			h.log.Fatal(err)
+		}
+	}()
 	// 开始读取
-	size, err := h.copyWithLimit(MaxUploadSize, &Record{RequestID: token, FileID: token}, f, file)
+	size, err := h.copyWithLimit(checkResult.Size, &Record{RequestID: token, FileID: token}, f, file)
+	if err == ErrReachMaxSize {
+		writeError(w, 400, err)
+		return
+	}
 	if err != nil {
 		writeError(w, 400, ErrReadSocket)
+		return
 	}
 	// 重置文件的读取位置
 	f.Seek(0, io.SeekStart)
@@ -94,11 +110,11 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, ErrReadFormFile)
 		return
 	}
-	// 删除缓存文件
-	f.Close()
-	err = os.Remove(token)
+	err = h.checker.Set(checkResult.Checked())
 	if err != nil {
 		h.log.Fatal(err)
+		writeError(w, 500, ErrInternalServer)
+		return
 	}
 	// 写入回复
 	h.writeSucResponse(w)
