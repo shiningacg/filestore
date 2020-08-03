@@ -87,7 +87,7 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 		return true
 	})
 	b.AddRecord(&Record{RequestID: r.RequestID, EndTime: uint64(time.Now().Unix())})
-	if n > maxSize {
+	if n > maxSize && maxSize != 0 {
 		return n, ErrReachMaxSize
 	}
 	return n, err

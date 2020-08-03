@@ -8,6 +8,10 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
 replace github.com/coreos/bbolt v1.3.4 => go.etcd.io/bbolt v1.3.4
 
+replace (
+	github.com/shiningacg/sn-ipfs => /Users/shlande/go/src/github.com/shiningacg/ipfs-filestore
+)
+
 require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/boltdb/bolt v1.3.1

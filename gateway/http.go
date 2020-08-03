@@ -47,6 +47,7 @@ func (h *HttpServer) Download(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// 判断socket是否关闭
 		// 打日志
+		h.log.Fatal(err)
 		writeError(w, 400, ErrReadSocket)
 		return
 	}

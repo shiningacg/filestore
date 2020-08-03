@@ -102,6 +102,9 @@ func wrapPBFile(file *rpc.File) fs.BaseFile {
 }
 
 func toPBSpace(space *fs.Space) *rpc.SpaceInfo {
+	if space == nil {
+		return &rpc.SpaceInfo{}
+	}
 	return &rpc.SpaceInfo{
 		Cap:   space.Cap,
 		Total: space.Total,
@@ -111,19 +114,25 @@ func toPBSpace(space *fs.Space) *rpc.SpaceInfo {
 }
 
 func toPBNetwork(network *fs.Network) *rpc.NetworkInfo {
+	if network == nil {
+		return &rpc.NetworkInfo{}
+	}
 	return &rpc.NetworkInfo{
 		Upload:   network.Upload,
 		Download: network.Download,
 	}
 }
 
-func toPBBandwidth(gateway *fs.Bandwidth) *rpc.GatewayInfo {
+func toPBBandwidth(bandwidth *fs.Bandwidth) *rpc.GatewayInfo {
+	if bandwidth == nil {
+		return &rpc.GatewayInfo{}
+	}
 	return &rpc.GatewayInfo{
-		Visit:         gateway.Visit,
-		DayVisit:      gateway.DayVisit,
-		HourVisit:     gateway.HourVisit,
-		Bandwidth:     gateway.Bandwidth,
-		DayBandwidth:  gateway.DayBandwidth,
-		HourBandwidth: gateway.HourBandwidth,
+		Visit:         bandwidth.Visit,
+		DayVisit:      bandwidth.DayVisit,
+		HourVisit:     bandwidth.HourVisit,
+		Bandwidth:     bandwidth.Bandwidth,
+		DayBandwidth:  bandwidth.DayBandwidth,
+		HourBandwidth: bandwidth.HourBandwidth,
 	}
 }
