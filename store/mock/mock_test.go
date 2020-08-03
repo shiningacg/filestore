@@ -30,7 +30,7 @@ func MewStore() *Store {
 
 func TestApp(t *testing.T) {
 	log.OpenLog(&log.Config{})
-	g := gateway.NewGateway(":8888", gateway.MockChecker{}, log.Default())
+	g := gateway.NewGateway(":1111", gateway.MockChecker{}, log.Default())
 	go func() {
 		for {
 			fmt.Println(g.BandWidth())

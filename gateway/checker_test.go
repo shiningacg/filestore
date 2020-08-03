@@ -16,16 +16,16 @@ func testNewRedisChecker() Checker {
 func TestSetChecker(t *testing.T) {
 	checker := testNewRedisChecker()
 	var checkResult = &CheckResult{
-		Token:  "aaa",
-		Name:   "a.test",
-		Size:   1024,
-		Status: false,
+		PostToken: "aaa",
+		Name:      "a.test",
+		Size:      1024,
+		Status:    false,
 	}
 	err := checker.Set(checkResult)
 	if err != nil {
 		panic(err)
 	}
-	res, err := checker.Get(checkResult.Token)
+	res, err := checker.Get(checkResult.PostToken)
 	if err != nil {
 		panic(err)
 	}

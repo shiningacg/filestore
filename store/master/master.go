@@ -9,11 +9,12 @@ import (
 )
 
 func NewMaster(master *common.Master) *Master {
-	return &Master{stores: make(map[string]fs.InfoStore), etcd: master}
+	return &Master{stores: make(map[string]fs.InfoStore), info: make(map[string]common.NodeInfo), etcd: master}
 }
 
 type Master struct {
 	stores map[string]fs.InfoStore
+	info   map[string]common.NodeInfo
 	etcd   *common.Master
 }
 
@@ -79,6 +80,7 @@ func (m *Master) Gateway() *fs.Bandwidth {
 
 func (m *Master) Offline(info *common.NodeInfo) {
 	// TODO: 如何关闭连接
+	delete(m.info, info.NodeId)
 	delete(m.stores, info.NodeId)
 }
 
@@ -89,4 +91,17 @@ func (m *Master) Online(info *common.NodeInfo) {
 		fmt.Println(err)
 	}
 	m.stores[info.NodeId] = store
+	m.info[info.NodeId] = *info
+}
+
+func (m *Master) GetNodeList() map[string]common.NodeInfo {
+	return m.info
+}
+
+func (m *Master) GetUploadAddr(token string) string {
+	info, has := m.info["center"]
+	if !has {
+		return ""
+	}
+	return info.GatewayAddr + token
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	fs "github.com/shiningacg/filestore"
+	"github.com/shiningacg/filestore/gateway"
 	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/filestore/store/remote/rpc"
 	"google.golang.org/grpc"
@@ -11,9 +12,10 @@ import (
 	"net"
 )
 
-func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore, r *common.Reporter) *StoreServer {
+func NewStoreGRPCServer(addr string, g *gateway.Gateway, adder Adder, fs fs.FileStore, r *common.Reporter) *StoreServer {
 	ss := &StoreServer{
 		addr:      addr,
+		g:         g,
 		Adder:     adder,
 		FileStore: fs,
 		Reporter:  r,
@@ -42,6 +44,7 @@ func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore, r *common.Rep
 
 type StoreServer struct {
 	addr string
+	g    *gateway.Gateway
 	Adder
 	fs.FileStore
 	*common.Reporter
@@ -49,9 +52,10 @@ type StoreServer struct {
 
 func (s StoreServer) report() *common.NodeInfo {
 	return &common.NodeInfo{
-		NodeId:   "center",
-		NodeType: "store",
-		GRPCAddr: s.addr,
+		NodeId:      "center",
+		NodeType:    "store",
+		GRPCAddr:    s.addr,
+		GatewayAddr: s.g.PostUrl(""),
 	}
 }
 

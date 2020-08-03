@@ -3,6 +3,7 @@ package os
 import (
 	"fmt"
 	fs "github.com/shiningacg/filestore"
+	"github.com/shiningacg/filestore/gateway"
 
 	"github.com/shiningacg/mygin-frame-libs/log"
 	"os"
@@ -16,7 +17,7 @@ func testOpenStore() *Store {
 	return NewOStore(&StoreConfig{
 		GatewayAddr: ":8887",
 		StorePath:   ".",
-	}, logger)
+	}, gateway.MockChecker{}, logger)
 }
 
 func TestNewOStore(t *testing.T) {

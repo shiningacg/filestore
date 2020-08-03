@@ -13,14 +13,14 @@ type Checker interface {
 }
 
 type CheckResult struct {
-	Token  string
-	Name   string
-	Size   uint64
-	Status bool
+	PostToken string
+	UUID      string
+	Name      string
+	Size      uint64
 }
 
-func (c *CheckResult) Checked() *CheckResult {
-	c.Status = true
+func (c *CheckResult) Checked(uuid string) *CheckResult {
+	c.UUID = uuid
 	return c
 }
 
@@ -68,7 +68,7 @@ func (c *RedisChecker) Set(result *CheckResult) error {
 	if err != nil {
 		return err
 	}
-	res := c.Client.Set(context.TODO(), result.Token, b, time.Hour*24)
+	res := c.Client.Set(context.TODO(), result.PostToken, b, time.Hour*24)
 	return res.Err()
 }
 
@@ -88,10 +88,10 @@ type MockChecker struct{}
 
 func (m MockChecker) Get(token string) (*CheckResult, error) {
 	return &CheckResult{
-		Token:  token,
-		Name:   "mock",
-		Size:   1024,
-		Status: false,
+		PostToken: token,
+		UUID:      "test",
+		Name:      "mock",
+		Size:      1024,
 	}, nil
 }
 

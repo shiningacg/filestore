@@ -41,6 +41,8 @@ func (s *Store) Add(file store.ReadableFile) error {
 	}
 	log.Printf("添加文件到仓库：%v %v %v %v", file.Name(), file.UUID(), file.Size(), file.Url())
 	log.Println(string(data))
+	file.SetUUID("test")
+	file.SetUrl(s.g.GetUrl(file.UUID()))
 	return nil
 }
 

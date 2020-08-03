@@ -104,13 +104,14 @@ func (h *HttpServer) Upload(w http.ResponseWriter, r *http.Request) {
 	bs.SetName(header.Filename)
 	bs.SetSize(size)
 	// 放入仓库中
-	err = h.fs.Add(fs.NewReadableFile(bs, f))
+	rf := fs.NewReadableFile(bs, f)
+	err = h.fs.Add(rf)
 	if err != nil {
 		h.log.Fatal(err)
 		writeError(w, 400, ErrReadFormFile)
 		return
 	}
-	err = h.checker.Set(checkResult.Checked())
+	err = h.checker.Set(checkResult.Checked(rf.UUID()))
 	if err != nil {
 		h.log.Fatal(err)
 		writeError(w, 500, ErrInternalServer)

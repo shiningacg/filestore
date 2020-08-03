@@ -27,7 +27,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.14.5 // indirect
 	github.com/jonboulle/clockwork v0.2.0 // indirect
 	github.com/shiningacg/apicore v0.0.0-20200614080909-72ebc6ee72c8
-	github.com/shiningacg/mygin-frame-libs v0.0.0-20200801091958-2a15a5dde1ef
+	github.com/shiningacg/mygin-frame-libs v0.0.0-20200801133652-d3ee76596824
 	github.com/shiningacg/sn-ipfs v0.0.0-20200716013455-f0f146331a5b
 	github.com/shirou/gopsutil v2.20.6+incompatible
 	github.com/soheilhy/cmux v0.1.4 // indirect

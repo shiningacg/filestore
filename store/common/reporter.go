@@ -12,9 +12,10 @@ import (
 
 // 用于汇报节点信息
 type NodeInfo struct {
-	NodeId   string
-	NodeType string
-	GRPCAddr string
+	NodeId      string
+	NodeType    string
+	GRPCAddr    string
+	GatewayAddr string
 }
 
 func (n *NodeInfo) Key() string {

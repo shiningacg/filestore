@@ -6,8 +6,8 @@ import (
 	"github.com/shiningacg/mygin-frame-libs/log"
 )
 
-func NewOStore(config *StoreConfig, logger *log.Logger) *Store {
-	g := gateway.NewGateway(config.GatewayAddr, logger)
+func NewOStore(config *StoreConfig, checker gateway.Checker, logger *log.Logger) *Store {
+	g := gateway.NewGateway(config.GatewayAddr, checker, logger)
 	s := &Store{
 		gateway:      g,
 		storeManager: NewDefaultManager(config.StorePath),

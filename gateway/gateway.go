@@ -53,6 +53,6 @@ func (g *Gateway) GetUrl(uuid string) string {
 }
 
 // 传入一个uuid，获取上传地址
-func (g *Gateway) PostUrl(uuid string) string {
-	return fmt.Sprintf("http://%v/post/%v", g.addr, uuid)
+func (g *Gateway) PostUrl(token string) string {
+	return fmt.Sprintf("http://%v/post/%v", g.addr, token)
 }
