@@ -88,7 +88,6 @@ func (m *Master) watch() {
 		case <-m.ctx.Done():
 			return
 		case evt := <-m.evt:
-			fmt.Printf("watch:%#v", evt)
 			switch evt.Action {
 			case cluster.PUT:
 				// 节点是否已经存在过了

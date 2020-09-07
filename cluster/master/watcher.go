@@ -7,6 +7,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/shiningacg/filestore/cluster"
+	"log"
 	"time"
 )
 
@@ -43,9 +44,9 @@ func (w *watcher) UpdateAll() {
 	}
 	for _, v := range resp.Kvs {
 		data := &cluster.Data{}
-		id := string(v.Key[:len(w.path)])
+		id, err1 := w.idFromKey(string(v.Key))
 		err := data.Decode(v.Value)
-		if err != nil {
+		if err != nil || err1 != nil {
 			fmt.Printf("无法加载节点信息：%v", id)
 		}
 		// 创建event
@@ -67,12 +68,15 @@ func (w *watcher) Watch(ctx context.Context) {
 			case mvccpb.PUT:
 				err := data.Decode(evt.Kv.Value)
 				if err != nil {
+					// TODO:使用统一的log
+					log.Println(err)
 					continue
 				}
 				w.sendEvent(cluster.NewEvent(data, cluster.PUT))
 			case mvccpb.DELETE:
 				id, err := w.idFromKey(string(evt.Kv.Key))
 				if err != nil {
+					log.Println(err)
 					continue
 				}
 				data.Id = id
@@ -96,5 +100,5 @@ func (w *watcher) idFromKey(key string) (string, error) {
 	if len(key) < len(w.path) {
 		return "", errors.New("无效的key")
 	}
-	return key[:len(w.path)], nil
+	return key[len(w.path):], nil
 }

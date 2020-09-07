@@ -72,7 +72,7 @@ type Node struct {
 // Update 更新节点的信息，如果地址发送了改变那么会重新建立grpc连接
 func (n *Node) Update(node *cluster.Data) error {
 	// 如果监听地址变化了，那么就需要重新加载
-	if node.IsHostChange(node.MetaData) {
+	if n.IsHostChange(node.MetaData) {
 		for i, addr := range node.Host {
 			store, err := remote.NewRemoteStore(addr)
 			// 所有地址都无法连接

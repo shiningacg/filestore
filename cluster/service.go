@@ -14,11 +14,11 @@ type Service struct {
 }
 
 func (s Service) ToKey() string {
-	return s.ToPath() + "/" + s.Id
+	return s.ToPath() + s.Id
 }
 
 func (s Service) ToPath() string {
-	return "/" + strings.Join(strings.Split(s.Name, "."), "/")
+	return "/" + strings.Join(strings.Split(s.Name, "."), "/") + "/"
 }
 
 // Data 存放在etcd，描述服务的一些信息
