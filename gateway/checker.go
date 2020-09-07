@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// check 用户上传时的权限检测
 type Checker interface {
 	Get(token string) (*CheckResult, error)
 	Set(result *CheckResult) error
