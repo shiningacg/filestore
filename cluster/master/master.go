@@ -3,15 +3,15 @@ package master
 import (
 	"context"
 	"fmt"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
-	"go.etcd.io/etcd/clientv3"
 	"log"
 )
 
-func NewMaster(ctx context.Context, client *clientv3.Client) *Master {
+func NewMaster(ctx context.Context, client *clientv3.Client, service cluster.Service) *Master {
 	nodes := make(Nodes, 0, 5)
 	evt := make(chan cluster.Event, 5)
-	watcher := NewWatcher(ctx, client, "svc.file")
+	watcher := NewWatcher(client, service.ToPath())
 	watcher.Events(evt)
 	master := &Master{
 		ctx:     ctx,
@@ -19,12 +19,14 @@ func NewMaster(ctx context.Context, client *clientv3.Client) *Master {
 		nodes:   nodes,
 		evt:     evt,
 	}
+	go master.Watcher.Watch(ctx)
 	go master.watch()
 	return master
 }
 
 // 主要负责负载均衡
 type Master struct {
+	cluster.Service
 	ctx   context.Context
 	nodes Nodes
 	Watcher
@@ -86,6 +88,7 @@ func (m *Master) watch() {
 		case <-m.ctx.Done():
 			return
 		case evt := <-m.evt:
+			fmt.Printf("watch:%#v", evt)
 			switch evt.Action {
 			case cluster.PUT:
 				// 节点是否已经存在过了

@@ -2,32 +2,29 @@ package master
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/shiningacg/filestore/cluster"
-	"go.etcd.io/etcd/clientv3"
+	"time"
 )
 
-func NewWatcher(ctx context.Context, client *clientv3.Client, name string) Watcher {
-	service := cluster.Service{Name: name}
+func NewWatcher(client *clientv3.Client, path string) Watcher {
 	return &watcher{
-		path:   service.ToPath(),
-		ctx:    ctx,
+		path:   path,
 		Client: client,
 	}
 }
 
 type Watcher interface {
+	Watch(ctx context.Context)
 	Events(chan<- cluster.Event)
 	UpdateAll()
 }
 
 type watcher struct {
 	path string
-	ctx  context.Context
-
-	cancel func()
-	wctx   context.Context
 
 	repo []chan<- cluster.Event
 	*clientv3.Client
@@ -36,7 +33,10 @@ type watcher struct {
 func (w *watcher) UpdateAll() {
 	kv := clientv3.NewKV(w.Client)
 	// 获取所有已经在连接的节点
-	resp, err := kv.Get(w.ctx, w.path, clientv3.WithPrefix())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	resp, err := kv.Get(ctx, w.path, clientv3.WithPrefix())
 	if err != nil {
 		fmt.Println("初始化失败：", err)
 		return
@@ -53,23 +53,29 @@ func (w *watcher) UpdateAll() {
 	}
 }
 
-func (w *watcher) watch() {
+func (w *watcher) Watch(ctx context.Context) {
 	watcher := clientv3.NewWatcher(w.Client)
-	w.wctx, w.cancel = context.WithCancel(w.ctx)
 
-	wch := watcher.Watch(w.wctx, w.path, clientv3.WithPrefix())
+	wch := watcher.Watch(ctx, w.path, clientv3.WithPrefix())
 	for wr := range wch {
 		if wr.Canceled {
 			return
 		}
 		for _, evt := range wr.Events {
 			data := &cluster.Data{}
-			err := data.Decode(evt.Kv.Value)
-			fmt.Println(err)
 			switch evt.Type {
 			case mvccpb.PUT:
+				err := data.Decode(evt.Kv.Value)
+				if err != nil {
+					continue
+				}
 				w.sendEvent(cluster.NewEvent(data, cluster.PUT))
 			case mvccpb.DELETE:
+				id, err := w.idFromKey(string(evt.Kv.Key))
+				if err != nil {
+					continue
+				}
+				data.Id = id
 				w.sendEvent(cluster.NewEvent(data, cluster.DEL))
 			}
 		}
@@ -84,4 +90,11 @@ func (w *watcher) sendEvent(event cluster.Event) {
 	for _, c := range w.repo {
 		c <- event
 	}
+}
+
+func (w *watcher) idFromKey(key string) (string, error) {
+	if len(key) < len(w.path) {
+		return "", errors.New("无效的key")
+	}
+	return key[:len(w.path)], nil
 }

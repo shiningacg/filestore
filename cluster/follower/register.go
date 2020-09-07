@@ -18,6 +18,7 @@ type Register interface {
 func NewRegister(ctx context.Context, client *clientv3.Client, data *cluster.Data, service cluster.Service) Register {
 	return &register{
 		ctx:     ctx,
+		Data:    data,
 		Client:  client,
 		Service: service,
 	}
@@ -121,5 +122,8 @@ func (r *register) updateData() error {
 func (r *register) Deregister() {
 	if r.lcf != nil {
 		r.lcf()
+	}
+	if r.wcf != nil {
+		r.wcf()
 	}
 }
