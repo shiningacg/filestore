@@ -2,7 +2,6 @@ package master
 
 import (
 	"context"
-	"fmt"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
 	"log"
@@ -82,7 +81,12 @@ func (m *Master) BestExit() *Node {
 
 // watch 监听etcd中发生的事件，对节点进行更新
 func (m *Master) watch() {
-	go m.Watcher.UpdateAll()
+	go func() {
+		err := m.Watcher.UpdateAll()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -98,7 +102,7 @@ func (m *Master) watch() {
 						// 更新信息失败，节点暂时不可用，进行删除
 						// TODO：让node感知到错误的发生从而进行一次回滚？
 						if err != nil {
-							fmt.Println(err)
+							log.Println(err)
 							m.nodes.Delete(node.Id)
 						}
 					}
@@ -108,9 +112,13 @@ func (m *Master) watch() {
 						log.Println(err)
 					} else {
 						m.nodes = append(m.nodes, node)
+						log.Printf("新节点上线：%v", evt.Id)
 					}
 				}
 			case cluster.DEL:
+				if m.nodes.Node(evt.Id) != nil {
+					log.Println("节点离线:", evt.Id)
+				}
 				m.nodes.Delete(evt.Id)
 			}
 		}

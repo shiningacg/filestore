@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
+	"github.com/shiningacg/filestore/store/remote"
 	"testing"
 )
 
@@ -22,6 +23,14 @@ func TestNewMaster(t *testing.T) {
 	master.Watcher.Events(evts)
 	fmt.Println("hi")
 	for evt := range evts {
-		fmt.Println("\ntese", evt)
+		fmt.Println(evt)
 	}
+}
+
+func TestNewRemoteStore(t *testing.T) {
+	store, err := remote.NewRemoteStore("127.0.0.1:8888")
+	if err != nil {
+		panic(err)
+	}
+	defer store.Close()
 }

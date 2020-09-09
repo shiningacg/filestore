@@ -21,7 +21,7 @@ func NewWatcher(client *clientv3.Client, path string) Watcher {
 type Watcher interface {
 	Watch(ctx context.Context)
 	Events(chan<- cluster.Event)
-	UpdateAll()
+	UpdateAll() error
 }
 
 type watcher struct {
@@ -31,7 +31,7 @@ type watcher struct {
 	*clientv3.Client
 }
 
-func (w *watcher) UpdateAll() {
+func (w *watcher) UpdateAll() error {
 	kv := clientv3.NewKV(w.Client)
 	// 获取所有已经在连接的节点
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
@@ -39,8 +39,7 @@ func (w *watcher) UpdateAll() {
 
 	resp, err := kv.Get(ctx, w.path, clientv3.WithPrefix())
 	if err != nil {
-		fmt.Println("初始化失败：", err)
-		return
+		return fmt.Errorf("初始化失败：%v", err)
 	}
 	for _, v := range resp.Kvs {
 		data := &cluster.Data{}
@@ -52,6 +51,7 @@ func (w *watcher) UpdateAll() {
 		// 创建event
 		w.sendEvent(cluster.NewEvent(data, cluster.PUT))
 	}
+	return nil
 }
 
 func (w *watcher) Watch(ctx context.Context) {

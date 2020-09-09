@@ -16,7 +16,7 @@ func TestNewStoreServer(t *testing.T) {
 	etcdConf := &common.EtcdConfig{EndPoint: []string{"127.0.0.1:2379"}}
 	store := mock.NewStore(g)
 	g.SetStore(store)
-	NewStoreGRPCServer("127.0.0.1:6666", g, MockAdder{}, store, common.NewReporter(etcdConf))
+	NewStoreGRPCServer("127.0.0.1:5060", g, MockAdder{}, store, common.NewReporter(etcdConf))
 	for {
 		fmt.Println(g.BandWidth())
 		time.Sleep(time.Second * 10)

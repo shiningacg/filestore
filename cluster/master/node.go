@@ -57,6 +57,7 @@ func NewNode(host string) (*Node, error) {
 // NewNodeFromData 通过Data更新一个node
 func NewNodeFromData(data *cluster.Data) (*Node, error) {
 	var node = &Node{}
+	node.MetaData.Id = data.Id
 	return node, node.Update(data)
 }
 
