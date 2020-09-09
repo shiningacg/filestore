@@ -66,8 +66,24 @@ func (m *Master) Exits() Nodes {
 
 // TODO：现在的Best判断都只通过网络状况判断，如果在一秒内发生了多个请求而缓存数据没有刷新，那么可能会被分配到同一个服务器中
 // BestEntry 找到最佳的上传节点
-func (m *Master) BestEntry() *Node {
-	return m.Entries().BestDownload()
+func (m *Master) BestEntry(size uint64) *Node {
+	nodes := m.Entries()
+	if size == 0 {
+		return nodes.BestUpload()
+	}
+	// TODO: 多线程查询，使用ctx限制超时时间
+	for {
+		if len(nodes) == 0 {
+			break
+		}
+		node := nodes.BestDownload()
+		if node.Space().Free < size {
+			nodes = nodes.Delete(node.Id)
+			continue
+		}
+		return node
+	}
+	return nil
 }
 
 // BestExit 找出最佳的出口节点
@@ -76,6 +92,7 @@ func (m *Master) BestExit(fid string) *Node {
 	if fid == "" {
 		return nodes.BestUpload()
 	}
+	// TODO: 多线程查询，使用ctx限制超时时间
 	for {
 		if len(nodes) == 0 {
 			break
