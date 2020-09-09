@@ -2,9 +2,12 @@ package remote
 
 import (
 	"context"
+	"errors"
 	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/store/remote/rpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"time"
 )
 
 func NewRemoteStore(addr string) (*Store, error) {
@@ -12,11 +15,41 @@ func NewRemoteStore(addr string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{rpc.NewRemoteStoreClient(conn)}, nil
+	if status := conn.GetState(); status != connectivity.Ready {
+		ctx, cf := context.WithTimeout(context.Background(), time.Second*1)
+		defer cf()
+		// 等待连接建立
+		for {
+			status := conn.GetState()
+			if status == connectivity.Ready {
+				break
+			}
+			// 超时
+			if !conn.WaitForStateChange(ctx, status) {
+				break
+			}
+			status = conn.GetState()
+			// 状态变化后检测状态
+			if status == connectivity.TransientFailure {
+				break
+			}
+			if status != connectivity.Ready {
+				continue
+			}
+		}
+		if conn.GetState() != connectivity.Ready {
+			return nil, errors.New("无法建立连接")
+		}
+	}
+	return &Store{
+		RemoteStoreClient: rpc.NewRemoteStoreClient(conn),
+		conn:              conn,
+	}, nil
 }
 
 type Store struct {
 	rpc.RemoteStoreClient
+	conn *grpc.ClientConn
 }
 
 func (s *Store) Get(uuid string) (fs.BaseFile, error) {
@@ -59,6 +92,10 @@ func (s *Store) Gateway() *fs.Bandwidth {
 		return nil
 	}
 	return toStoreBandwidth(bw)
+}
+
+func (s *Store) Close() error {
+	return s.conn.Close()
 }
 
 func toBaseFile(file *rpc.File) fs.BaseFile {

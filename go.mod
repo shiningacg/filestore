@@ -4,7 +4,6 @@ go 1.14
 
 replace (
 	github.com/coreos/bbolt v1.3.4 => go.etcd.io/bbolt v1.3.4
-	github.com/coreos/etcd => github.com/coreos/etcd v3.3.22+incompatible
 	github.com/coreos/go-systemd => github.com/coreos/go-systemd/v22 v22.0.0
 	google.golang.org/grpc v1.31.1 => google.golang.org/grpc v1.26.0
 )
@@ -15,7 +14,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/boltdb/bolt v1.3.1
 	github.com/coreos/bbolt v1.3.4 // indirect
-	github.com/coreos/etcd v3.3.10+incompatible
+	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/coreos/go-systemd v0.0.0-00010101000000-000000000000 // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
