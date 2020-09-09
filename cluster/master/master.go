@@ -67,16 +67,28 @@ func (m *Master) Exits() Nodes {
 // TODO：现在的Best判断都只通过网络状况判断，如果在一秒内发生了多个请求而缓存数据没有刷新，那么可能会被分配到同一个服务器中
 // BestEntry 找到最佳的上传节点
 func (m *Master) BestEntry() *Node {
-	return m.Entries().SortBest(func(n1, n2 *Node) bool {
-		return n1.Network().Upload < n2.Network().Upload
-	})
+	return m.Entries().BestDownload()
 }
 
 // BestExit 找出最佳的出口节点
-func (m *Master) BestExit() *Node {
-	return m.Exits().SortBest(func(n1, n2 *Node) bool {
-		return n1.Network().Download < n1.Network().Download
-	})
+func (m *Master) BestExit(fid string) *Node {
+	nodes := m.Entries()
+	if fid == "" {
+		return nodes.BestUpload()
+	}
+	for {
+		if len(nodes) == 0 {
+			break
+		}
+		node := nodes.BestDownload()
+		_, err := node.Get(fid)
+		if err != nil {
+			nodes = nodes.Delete(node.Id)
+			continue
+		}
+		return node
+	}
+	return nil
 }
 
 // watch 监听etcd中发生的事件，对节点进行更新

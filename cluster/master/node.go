@@ -10,18 +10,38 @@ import (
 
 type Nodes []*Node
 
-func (n Nodes) SortBest(less func(n1, n2 *Node) bool) *Node {
+// TODO: 添加一些集体调用的代码
+
+func (n Nodes) SortBest(better func(n1, n2 *Node) bool) *Node {
 	var best *Node
 	if len(n) == 0 {
 		return nil
 	}
 	best = n[0]
 	for i := 1; i < len(n)-1; i++ {
-		if !less(best, n[i]) {
+		if !better(best, n[i]) {
 			best = n[i]
 		}
 	}
 	return best
+}
+
+func (n Nodes) BestUpload() *Node {
+	return n.SortBest(func(n1, n2 *Node) bool {
+		return n1.Network().Upload < n2.Network().Upload
+	})
+}
+
+func (n Nodes) BestDownload() *Node {
+	return n.SortBest(func(n1, n2 *Node) bool {
+		return n1.Network().Download < n2.Network().Download
+	})
+}
+
+func (n Nodes) BestSpace() *Node {
+	return n.SortBest(func(n1, n2 *Node) bool {
+		return n1.Space().Free > n2.Space().Free
+	})
 }
 
 func (n Nodes) Node(id string) *Node {
@@ -33,7 +53,6 @@ func (n Nodes) Node(id string) *Node {
 	return nil
 }
 
-// TODO：在删除前进行grpc断开的处理
 func (n Nodes) Delete(id string) Nodes {
 	for i, v := range n {
 		if v.Id == id {
@@ -41,6 +60,20 @@ func (n Nodes) Delete(id string) Nodes {
 		}
 	}
 	return n
+}
+
+// TODO:删除node同时断开grpc
+func (n Nodes) Destroy(id string) Nodes {
+	// node := n.Node(id)
+	return n.Delete(id)
+}
+
+func (n Nodes) callAsync(call func(node *Node) interface{}, ch chan interface{}) {
+	for _, n := range n {
+		go func() {
+			ch <- call(n)
+		}()
+	}
 }
 
 // NewNode 通过给定的地址创建一个node
