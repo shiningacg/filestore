@@ -97,7 +97,6 @@ func wrapPBFile(file *rpc.File) fs.BaseFile {
 	bf.SetUUID(file.UUID)
 	bf.SetName(file.Name)
 	bf.SetSize(file.Size)
-	bf.SetUrl(file.Url)
 	return bf
 }
 

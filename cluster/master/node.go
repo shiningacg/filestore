@@ -132,3 +132,7 @@ func (n *Node) Network() *fs.Network {
 	n.lastUpdate = now
 	return n.network
 }
+
+func (n *Node) Entrance(token string) string {
+	return n.Data.Gateway + "/upload/" + token
+}

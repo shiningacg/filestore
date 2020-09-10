@@ -19,7 +19,6 @@ service RemoteStore {
 
 message File {
   string UUID = 1;
-  string Url = 2;
   uint64 Size = 3;
   string Name = 4;
 }

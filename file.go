@@ -21,9 +21,6 @@ type BaseFile interface {
 	// 文件大小
 	Size() uint64
 	SetSize(size uint64)
-	// 可供下载的地址
-	Url() string
-	SetUrl(url string)
 }
 
 // 可以直接读取的文件
@@ -43,7 +40,6 @@ type BaseFileStruct struct {
 	uuid string
 	name string
 	size uint64
-	url  string
 }
 
 func (b *BaseFileStruct) SetSize(size uint64) {
@@ -58,20 +54,12 @@ func (b *BaseFileStruct) SetName(name string) {
 	b.name = name
 }
 
-func (b *BaseFileStruct) SetUrl(url string) {
-	b.url = url
-}
-
 func (b *BaseFileStruct) Name() string {
 	return b.name
 }
 
 func (b *BaseFileStruct) Size() uint64 {
 	return b.size
-}
-
-func (b *BaseFileStruct) Url() string {
-	return b.url
 }
 
 func (b *BaseFileStruct) UUID() string {

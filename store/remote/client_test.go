@@ -16,7 +16,6 @@ func testNewRemoteStore() *Store {
 func TestStore_Add(t *testing.T) {
 	var bf = &fs.BaseFileStruct{}
 	bf.SetName("test.txt")
-	bf.SetUrl("127.0.0.1:8888/get/aaa")
 	bf.SetUUID("aaa")
 	bf.SetSize(12)
 	err := testNewRemoteStore().Add(bf)
@@ -28,7 +27,6 @@ func TestStore_Add(t *testing.T) {
 func TestStore_Remove(t *testing.T) {
 	var bf = &fs.BaseFileStruct{}
 	bf.SetName("test.txt")
-	bf.SetUrl("127.0.0.1:8888/get/aaa")
 	bf.SetUUID("aaa")
 	bf.SetSize(12)
 	err := testNewRemoteStore().Remove(bf.UUID())
@@ -40,7 +38,6 @@ func TestStore_Remove(t *testing.T) {
 func TestStore_Get(t *testing.T) {
 	var bf = &fs.BaseFileStruct{}
 	bf.SetName("test.txt")
-	bf.SetUrl("127.0.0.1:8888/get/aaa")
 	bf.SetUUID("aaa")
 	bf.SetSize(12)
 	file, err := testNewRemoteStore().Get(bf.UUID())

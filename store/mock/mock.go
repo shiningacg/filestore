@@ -28,7 +28,6 @@ func (s *Store) Get(uuid string) (store.ReadableFile, error) {
 	data := []byte("测试数据")
 	f := bytes.NewReader(data)
 	bs.SetUUID(uuid)
-	bs.SetUrl(s.g.GetUrl(bs.UUID()))
 	bs.SetSize(uint64(len(data)))
 	bs.SetName("test.txt")
 	return store.NewReadableFile(bs, f), nil
@@ -39,10 +38,9 @@ func (s *Store) Add(file store.ReadableFile) error {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("添加文件到仓库：%v %v %v %v", file.Name(), file.UUID(), file.Size(), file.Url())
+	log.Printf("添加文件到仓库：%v %v %v", file.Name(), file.UUID(), file.Size())
 	log.Println(string(data))
 	file.SetUUID("test")
-	file.SetUrl(s.g.GetUrl(file.UUID()))
 	return nil
 }
 

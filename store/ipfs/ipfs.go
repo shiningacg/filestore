@@ -53,7 +53,6 @@ func (s *Store) Add(file fs.ReadableFile) error {
 		return err
 	}
 	file.SetUUID(f.Cid())
-	file.SetUrl(s.g.GetUrl(f.Cid()))
 	return nil
 }
 
@@ -64,7 +63,6 @@ func (s *Store) Get(uuid string) (fs.ReadableFile, error) {
 		return nil, err
 	}
 	var bf = &fs.BaseFileStruct{}
-	bf.SetUrl(s.g.GetUrl(f.Cid()))
 	bf.SetSize(f.Size())
 	bf.SetUUID(f.Cid())
 	bf.SetName(f.Cid())

@@ -48,7 +48,6 @@ func (a *HttpAdder) Find(file fs.BaseFile) fs.ReadableFile {
 	}
 	// 包装reader
 	bs.SetName(file.Name())
-	bs.SetUrl(file.Url())
 	bs.SetUUID(file.UUID())
 	return fs.NewReadableFile(bs, rsp.Body)
 }
@@ -60,7 +59,7 @@ func (a *HttpAdder) getUrl(uuid string) string {
 type MockAdder struct{}
 
 func (m MockAdder) Find(file fs.BaseFile) fs.ReadableFile {
-	log.Printf("通过adder寻找文件：%v %v", file.UUID(), file.Url())
+	log.Printf("通过adder寻找文件：%v", file.UUID())
 	var bt = []byte("测试数据")
 	return fs.NewReadableFile(file, bytes.NewReader(bt))
 }

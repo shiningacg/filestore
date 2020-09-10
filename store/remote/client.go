@@ -103,14 +103,12 @@ func toBaseFile(file *rpc.File) fs.BaseFile {
 	bf.SetUUID(file.UUID)
 	bf.SetSize(file.Size)
 	bf.SetName(file.Name)
-	bf.SetUrl(file.Url)
 	return bf
 }
 
 func toPBFile(file fs.BaseFile) *rpc.File {
 	return &rpc.File{
 		UUID: file.UUID(),
-		Url:  file.Url(),
 		Size: file.Size(),
 		Name: file.Name(),
 	}
