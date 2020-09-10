@@ -133,6 +133,10 @@ func (n *Node) Network() *fs.Network {
 	return n.network
 }
 
-func (n *Node) Entrance(token string) string {
+func (n *Node) Entry(token string) string {
 	return n.Data.Gateway + "/upload/" + token
+}
+
+func (n *Node) Exit(fid string) string {
+	return n.Data.Gateway + "/download/" + fid
 }
