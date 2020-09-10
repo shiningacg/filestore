@@ -134,9 +134,9 @@ func (n *Node) Network() *fs.Network {
 }
 
 func (n *Node) Entry(token string) string {
-	return n.Data.Gateway + "/upload/" + token
+	return n.Data.GatewayAddr + "/upload/" + token
 }
 
 func (n *Node) Exit(fid string) string {
-	return n.Data.Gateway + "/download/" + fid
+	return n.Data.GatewayAddr + "/download/" + fid
 }

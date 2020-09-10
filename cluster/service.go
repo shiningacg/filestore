@@ -24,10 +24,10 @@ func (s Service) ToPath() string {
 // Data 存放在etcd，描述服务的一些信息
 type Data struct {
 	MetaData
-	Gateway string
-	IsEntry bool
-	IsExit  bool
-	Cap     uint64
+	GatewayAddr string
+	IsEntry     bool
+	IsExit      bool
+	Cap         uint64
 }
 
 func (d *Data) Encode() []byte {
@@ -46,7 +46,7 @@ func (d *Data) Equal(data *Data) bool {
 			equal = stats
 		}
 	}
-	helper(d.Gateway == data.Gateway)
+	helper(d.GatewayAddr == data.GatewayAddr)
 	helper(d.IsExit == data.IsExit)
 	helper(d.IsEntry == data.IsEntry)
 	helper(d.Cap == data.Cap)
