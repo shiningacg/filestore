@@ -108,6 +108,10 @@ func (m *Master) BestExit(fid string) cluster.Node {
 	return nil
 }
 
+func (m *Master) Watch(repo chan<- cluster.Event) {
+	m.Watcher.Events(repo)
+}
+
 // watch 监听etcd中发生的事件，对节点进行更新
 func (m *Master) watch() {
 	go func() {
