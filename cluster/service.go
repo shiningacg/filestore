@@ -25,8 +25,8 @@ func (s Service) ToPath() string {
 type Data struct {
 	MetaData
 	GatewayAddr string
-	IsEntry     bool
-	IsExit      bool
+	Entry       bool
+	Exit        bool
 	Cap         uint64
 }
 
@@ -47,12 +47,20 @@ func (d *Data) Equal(data *Data) bool {
 		}
 	}
 	helper(d.GatewayAddr == data.GatewayAddr)
-	helper(d.IsExit == data.IsExit)
-	helper(d.IsEntry == data.IsEntry)
+	helper(d.Exit == data.Exit)
+	helper(d.Entry == data.Entry)
 	helper(d.Cap == data.Cap)
 	helper(d.MetaData.Equal(data.MetaData))
 
 	return equal
+}
+
+func (d Data) IsEntry() bool {
+	return d.Entry
+}
+
+func (d Data) IsExit() bool {
+	return d.Exit
 }
 
 // 可重用的数据，打算以后抽离出一个tool包出来
@@ -62,6 +70,12 @@ type MetaData struct {
 	Tag     string
 	Weight  uint8
 	Version uint64
+}
+
+func (d MetaData) Update(data MetaData) {
+	d.Tag = data.Tag
+	d.Weight = data.Weight
+	d.Version++
 }
 
 func (d MetaData) Equal(data MetaData) bool {

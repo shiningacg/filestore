@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func MewStore() *Store {
+func MewStore() *FileStore {
 	log.OpenLog(&log.Config{})
 	g := gateway.NewGateway(":8888", gateway.MockChecker{}, log.Default())
 	go func() {
@@ -17,7 +17,7 @@ func MewStore() *Store {
 			time.Sleep(time.Second * 10)
 		}
 	}()
-	store := &Store{g: g}
+	store := &FileStore{g: g}
 	g.SetStore(store)
 	go func() {
 		err := g.Run()
@@ -37,7 +37,7 @@ func TestApp(t *testing.T) {
 			time.Sleep(time.Second * 10)
 		}
 	}()
-	store := &Store{g: g}
+	store := &FileStore{g: g}
 	g.SetStore(store)
 	err := g.Run()
 	if err != nil {

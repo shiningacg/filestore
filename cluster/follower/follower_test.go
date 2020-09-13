@@ -24,9 +24,9 @@ func TestNewRegister(t *testing.T) {
 			Weight:  10,
 			Version: 1,
 		},
-		IsEntry: true,
-		IsExit:  true,
-		Cap:     0,
+		Entry: true,
+		Exit:  true,
+		Cap:   0,
 	}
 	service := cluster.Service{
 		Name: "svc.file",
