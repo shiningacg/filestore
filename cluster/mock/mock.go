@@ -4,7 +4,7 @@ import "github.com/shiningacg/filestore/cluster"
 
 func NewMaster() Master {
 	mock := NewNode()
-	nodes := make(cluster.Nodes, 0, 1)
+	nodes := make(cluster.Nodes, 1)
 	nodes[0] = mock
 	return Master{node: mock, nodes: nodes}
 }

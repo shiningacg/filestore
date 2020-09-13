@@ -8,14 +8,20 @@ import (
 	"log"
 )
 
-func NewStore(g *gateway.Gateway) store.FileStore {
+func NewFileStore(g *gateway.Gateway) store.FileStore {
+	store := &FileStore{g: g}
+	g.SetStore(store)
 	go func() {
 		err := g.Run()
 		if err != nil {
 			panic(err)
 		}
 	}()
-	return &FileStore{g: g}
+	return store
+}
+
+func NewFileStoreWithoutWeb() store.FileStore {
+	return &FileStore{}
 }
 
 type FileStore struct {
@@ -66,5 +72,15 @@ func (s *FileStore) Network() *store.Network {
 }
 
 func (s *FileStore) Gateway() *store.Bandwidth {
-	return s.g.BandWidth()
+	if s.g != nil {
+		return s.g.BandWidth()
+	}
+	return &store.Bandwidth{
+		Visit:         100,
+		DayVisit:      10,
+		HourVisit:     1,
+		Bandwidth:     1000,
+		DayBandwidth:  100,
+		HourBandwidth: 10,
+	}
 }

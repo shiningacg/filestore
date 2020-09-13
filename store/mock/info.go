@@ -3,8 +3,7 @@ package mock
 import (
 	"bytes"
 	store "github.com/shiningacg/filestore"
-	"github.com/shiningacg/filestore/gateway"
-	"log"
+	l "log"
 )
 
 func NewInfoStore() store.InfoStore {
@@ -12,12 +11,11 @@ func NewInfoStore() store.InfoStore {
 }
 
 type InfoStore struct {
-	g *gateway.Gateway
 }
 
 func (s *InfoStore) Get(uuid string) (store.BaseFile, error) {
 	var bs = &store.BaseFileStruct{}
-	log.Printf("从仓库取出文件：%v", uuid)
+	l.Printf("从仓库取出文件：%v", uuid)
 	data := []byte("测试数据")
 	f := bytes.NewReader(data)
 	bs.SetUUID(uuid)
@@ -27,13 +25,13 @@ func (s *InfoStore) Get(uuid string) (store.BaseFile, error) {
 }
 
 func (s *InfoStore) Add(file store.BaseFile) error {
-	log.Printf("添加文件到仓库：%v %v %v", file.Name(), file.UUID(), file.Size())
+	l.Printf("添加文件到仓库：%v %v %v", file.Name(), file.UUID(), file.Size())
 	file.SetUUID("test")
 	return nil
 }
 
 func (s *InfoStore) Remove(uuid string) error {
-	log.Printf("从仓库删除文件：%v", uuid)
+	l.Printf("从仓库删除文件：%v", uuid)
 	return nil
 }
 
@@ -54,5 +52,12 @@ func (s *InfoStore) Network() *store.Network {
 }
 
 func (s *InfoStore) Gateway() *store.Bandwidth {
-	return s.g.BandWidth()
+	return &store.Bandwidth{
+		Visit:         100,
+		DayVisit:      10,
+		HourVisit:     1,
+		Bandwidth:     1000,
+		DayBandwidth:  100,
+		HourBandwidth: 10,
+	}
 }

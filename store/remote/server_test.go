@@ -14,7 +14,7 @@ func TestNewStoreServer(t *testing.T) {
 	log.OpenLog(&log.Config{})
 	g := gateway.NewGateway(":8888", gateway.MockChecker{}, log.Default())
 	etcdConf := &common.EtcdConfig{EndPoint: []string{"127.0.0.1:2379"}}
-	store := mock.NewStore(g)
+	store := mock.NewFileStore(g)
 	g.SetStore(store)
 	NewStoreGRPCServer("127.0.0.1:5060", g, MockAdder{}, store, common.NewReporter(etcdConf))
 	for {
@@ -31,7 +31,7 @@ func TestNewStoreServerWithRedisChecker(t *testing.T) {
 	}
 	g := gateway.NewGateway(":8888", checker, log.Default())
 	etcdConf := &common.EtcdConfig{EndPoint: []string{"127.0.0.1:2379"}}
-	store := mock.NewStore(g)
+	store := mock.NewFileStore(g)
 	g.SetStore(store)
 	NewStoreGRPCServer("127.0.0.1:6666", g, MockAdder{}, store, common.NewReporter(etcdConf))
 	for {
