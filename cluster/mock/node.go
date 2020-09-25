@@ -8,7 +8,19 @@ import (
 
 func NewNode() *Node {
 	return &Node{
-		data:      cluster.Data{},
+		data: cluster.Data{
+			MetaData: cluster.MetaData{
+				Id:      "mock",
+				Host:    []string{"127.0.0.1:6666"},
+				Tag:     "",
+				Weight:  0,
+				Version: 0,
+			},
+			GatewayAddr: "http://mockstore",
+			Entry:       true,
+			Exit:        true,
+			Cap:         1024,
+		},
 		InfoStore: mc.NewInfoStore(),
 	}
 }
@@ -19,7 +31,7 @@ type Node struct {
 }
 
 func (n *Node) ID() string {
-	return "node"
+	return n.data.Id
 }
 
 func (n *Node) Update(data *cluster.Data) error {
