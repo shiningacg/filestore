@@ -47,3 +47,7 @@ func TestNewRegister(t *testing.T) {
 	time.Sleep(time.Second * 10)
 	register.Deregister()
 }
+
+func TestNewFollower(t *testing.T) {
+
+}

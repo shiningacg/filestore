@@ -7,8 +7,8 @@ const (
 	DEL
 )
 
-func NewEvent(data *Data, action Action) Event {
-	return Event{
+func NewEvent(data *Data, action Action) *Event {
+	return &Event{
 		Data:   data,
 		Action: action,
 	}

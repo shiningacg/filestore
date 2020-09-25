@@ -14,5 +14,5 @@ type Master interface {
 	// BestExit 找出最佳的出口节点
 	BestExit(fid string) Node
 	// 提供监控的功能
-	Watch(chan<- Event)
+	Watch(chan<- *Event)
 }

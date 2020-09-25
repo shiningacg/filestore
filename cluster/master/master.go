@@ -9,14 +9,14 @@ import (
 
 func NewMaster(ctx context.Context, client *clientv3.Client, service cluster.Service) *Master {
 	nodes := make(cluster.Nodes, 0, 5)
-	evt := make(chan cluster.Event, 5)
-	watcher := NewWatcher(client, service.ToPath())
-	watcher.Events(evt)
+	recv := make(chan *cluster.Event, 5)
+	watcher := cluster.NewWatcher(client, service.ToPath(), true)
+	watcher.Events(recv)
 	master := &Master{
 		ctx:     ctx,
 		Watcher: watcher,
 		nodes:   nodes,
-		evt:     evt,
+		recv:    recv,
 	}
 	go master.Watcher.Watch(ctx)
 	go master.watch()
@@ -28,8 +28,9 @@ type Master struct {
 	cluster.Service
 	ctx   context.Context
 	nodes cluster.Nodes
-	Watcher
-	evt chan cluster.Event
+	cluster.Watcher
+	recv chan *cluster.Event
+	repo []chan<- *cluster.Event
 }
 
 // Node 根据id查找一个节点，如果没有找到则返回nil
@@ -108,23 +109,26 @@ func (m *Master) BestExit(fid string) cluster.Node {
 	return nil
 }
 
-func (m *Master) Watch(repo chan<- cluster.Event) {
+func (m *Master) Watch(repo chan<- *cluster.Event) {
+	if m.repo == nil {
+		m.repo = make([]chan<- *cluster.Event, 0, 3)
+	}
+	m.repo = append(m.repo, repo)
 	m.Watcher.Events(repo)
 }
 
 // watch 监听etcd中发生的事件，对节点进行更新
 func (m *Master) watch() {
-	go func() {
-		err := m.Watcher.UpdateAll()
-		if err != nil {
-			log.Println(err)
-		}
-	}()
+	evts, err := m.Watcher.Exist()
+	if err != nil {
+		log.Println(err)
+	}
+	m.send(evts...)
 	for {
 		select {
 		case <-m.ctx.Done():
 			return
-		case evt := <-m.evt:
+		case evt := <-m.recv:
 			switch evt.Action {
 			case cluster.PUT:
 				// 节点是否已经存在过了
@@ -155,6 +159,14 @@ func (m *Master) watch() {
 				}
 				m.nodes.Delete(evt.Id)
 			}
+		}
+	}
+}
+
+func (m *Master) send(events ...*cluster.Event) {
+	for _, evt := range events {
+		for _, c := range m.repo {
+			c <- evt
 		}
 	}
 }
