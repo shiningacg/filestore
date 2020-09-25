@@ -9,37 +9,46 @@ import (
 	"time"
 )
 
-func TestNewRegister(t *testing.T) {
-	client, err := clientv3.New(clientv3.Config{
+var client *clientv3.Client
+
+var data = cluster.Data{
+	MetaData: cluster.MetaData{
+		Id:      "center",
+		Host:    []string{"127.0.0.1:5060"},
+		Tag:     "lala",
+		Weight:  10,
+		Version: 1,
+	},
+	Entry: true,
+	Exit:  true,
+	Cap:   0,
+}
+
+var service = cluster.Service{
+	Name: "svc.file",
+	Id:   "center",
+	Host: []string{"127.0.0.1:5060"},
+	TTL:  time.Second * 3,
+}
+
+func testInit() {
+	c, err := clientv3.New(clientv3.Config{
 		Endpoints: []string{"127.0.0.1:2379"},
 	})
 	if err != nil {
 		panic(err)
 	}
-	data := &cluster.Data{
-		MetaData: cluster.MetaData{
-			Id:      "center",
-			Host:    []string{"127.0.0.1:5060"},
-			Tag:     "lala",
-			Weight:  10,
-			Version: 1,
-		},
-		Entry: true,
-		Exit:  true,
-		Cap:   0,
-	}
-	service := cluster.Service{
-		Name: "svc.file",
-		Id:   "center",
-		Host: []string{"127.0.0.1:5060"},
-		TTL:  time.Second * 3,
-	}
-	register := NewRegister(context.Background(), client, data, service)
-	err = register.Register()
+	client = c
+}
+
+func TestNewRegister(t *testing.T) {
+	testInit()
+	register := NewRegister(context.Background(), client, &data, service)
+	err := register.Register()
 	if err != nil {
 		panic(err)
 	}
-	data, err = register.GetData()
+	data, err := register.GetData()
 	if err != nil {
 		panic(err)
 	}
@@ -49,5 +58,7 @@ func TestNewRegister(t *testing.T) {
 }
 
 func TestNewFollower(t *testing.T) {
-
+	testInit()
+	follower := NewFollower(client, data, service)
+	follower.Run()
 }

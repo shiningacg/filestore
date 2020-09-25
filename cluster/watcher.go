@@ -85,9 +85,6 @@ func (w *watcher) Watch(ctx context.Context) {
 }
 
 func (w *watcher) Events(repo chan<- *Event) {
-	if w.repo == nil {
-
-	}
 	w.repo = append(w.repo, repo)
 }
 
@@ -98,7 +95,7 @@ func (w watcher) idFromKey(key string) string {
 		}
 		return key[len(w.path):]
 	}
-	temps := strings.Split("/", w.path)
+	temps := strings.Split("/", key)
 	return temps[len(temps)-1]
 }
 
@@ -112,6 +109,9 @@ func (w watcher) Exist() ([]*Event, error) {
 	resp, err := kv.Get(ctx, w.path, clientv3.WithPrefix())
 	if err != nil {
 		return nil, fmt.Errorf("初始化失败：%v", err)
+	}
+	if len(resp.Kvs) == 0 {
+		return nil, nil
 	}
 	evts := make([]*Event, 0, len(resp.Kvs))
 	for _, v := range resp.Kvs {
