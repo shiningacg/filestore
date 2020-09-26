@@ -3,12 +3,13 @@ package ipfs
 import (
 	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway"
+	"github.com/shiningacg/filestore/gateway/checker"
 	"github.com/shiningacg/filestore/store"
 	"github.com/shiningacg/mygin-frame-libs/log"
 	ipfs "github.com/shiningacg/sn-ipfs"
 )
 
-func NewStore(gatewayAddr string, checker gateway.Checker, logger *log.Logger) (fs.FileStore, error) {
+func NewStore(gatewayAddr string, checker checker.Checker, logger *log.Logger) (fs.FileStore, error) {
 	s, err := ipfs.NewStore("127.0.0.1:5001", "127.0.0.1:8080")
 	if err != nil {
 		return nil, err
@@ -22,16 +23,16 @@ func NewStore(gatewayAddr string, checker gateway.Checker, logger *log.Logger) (
 
 type Store struct {
 	ipfs ipfs.Store
-	g    *gateway.Gateway
+	g    gateway.Gateway
 	log  *log.Logger
 }
 
 // 工厂方法
-func (s *Store) SetGateway(g *gateway.Gateway) {
+func (s *Store) SetGateway(g gateway.Gateway) {
 	s.g = g
 }
 
-func (s *Store) GetGateway() *gateway.Gateway {
+func (s *Store) GetGateway() gateway.Gateway {
 	return s.g
 }
 

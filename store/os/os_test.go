@@ -1,9 +1,10 @@
 package os
 
 import (
+	"context"
 	"fmt"
 	fs "github.com/shiningacg/filestore"
-	"github.com/shiningacg/filestore/gateway"
+	"github.com/shiningacg/filestore/gateway/checker"
 
 	"github.com/shiningacg/mygin-frame-libs/log"
 	"os"
@@ -17,7 +18,7 @@ func testOpenStore() *Store {
 	return NewOStore(&StoreConfig{
 		GatewayAddr: ":8887",
 		StorePath:   ".",
-	}, gateway.MockChecker{}, logger)
+	}, checker.MockChecker{}, logger)
 }
 
 func TestNewOStore(t *testing.T) {
@@ -28,7 +29,7 @@ func TestNewOStore(t *testing.T) {
 			fmt.Println(store.Gateway())
 		}
 	}()
-	err := store.gateway.Run()
+	err := store.gateway.Run(context.TODO())
 	if err != nil {
 		panic(err)
 	}

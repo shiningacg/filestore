@@ -2,7 +2,7 @@ package ipfs
 
 import (
 	"fmt"
-	"github.com/shiningacg/filestore/gateway"
+	"github.com/shiningacg/filestore/gateway/checker"
 	store2 "github.com/shiningacg/filestore/store"
 	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/filestore/store/remote"
@@ -13,7 +13,7 @@ import (
 
 func TestNewStore(t *testing.T) {
 	log.OpenLog(&log.Config{})
-	store, err := NewStore(":8888", gateway.MockChecker{}, log.Default())
+	store, err := NewStore(":8888", checker.MockChecker{}, log.Default())
 	if err != nil {
 		panic(err)
 	}
@@ -27,7 +27,7 @@ func TestNewRemoteStoreServer(t *testing.T) {
 	etcdConf := &common.EtcdConfig{
 		EndPoint: []string{"127.0.0.1:2379"},
 	}
-	checker, err := gateway.NewRedisChecker("127.0.0.1:6379", "")
+	checker, err := checker.NewRedisChecker("127.0.0.1:6379", "")
 	if err != nil {
 		panic(err)
 	}

@@ -1,9 +1,11 @@
-package gateway
+package checker
 
 import (
 	"context"
 	"encoding/json"
 	"github.com/go-redis/redis/v8"
+	svc "github.com/shiningacg/kit-file"
+	"google.golang.org/grpc"
 	"time"
 )
 
@@ -73,10 +75,46 @@ func (c *RedisChecker) Set(result *CheckResult) error {
 	return res.Err()
 }
 
-type GrpcChecker struct{}
+func NewGrpcChecker(addr string, secret string) (*GrpcChecker, error) {
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	client := svc.NewFileClient(conn)
+	return &GrpcChecker{FileClient: client}, nil
+}
 
-func (g GrpcChecker) Get(token string) (*CheckResult, error) {
-	panic("implement me")
+type GrpcChecker struct {
+	svc.FileClient
+}
+
+func (g *GrpcChecker) Set(result *CheckResult) error {
+	ctx, cf := context.WithTimeout(context.Background(), time.Second*5)
+	defer cf()
+	_, err := g.FileClient.UploadCallback(ctx, &svc.UploadCallbackRequest{
+		Uuid:  result.UUID,
+		Node:  result.Name,
+		Token: result.PostToken,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *GrpcChecker) Get(token string) (*CheckResult, error) {
+	ctx, cf := context.WithTimeout(context.Background(), time.Second*5)
+	defer cf()
+	info, err := g.FileClient.File(ctx, &svc.FileRequest{Fid: token})
+	if err != nil {
+		return nil, err
+	}
+	return &CheckResult{
+		PostToken: token,
+		UUID:      "",
+		Name:      info.Name,
+		Size:      0,
+	}, nil
 }
 
 type HttpChecker struct{}
@@ -92,7 +130,7 @@ func (m MockChecker) Get(token string) (*CheckResult, error) {
 		PostToken: token,
 		UUID:      "test",
 		Name:      "mock",
-		Size:      1024,
+		Size:      12,
 	}, nil
 }
 

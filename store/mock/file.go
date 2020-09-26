@@ -2,17 +2,18 @@ package mock
 
 import (
 	"bytes"
+	"context"
 	store "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway"
 	"io/ioutil"
 	"log"
 )
 
-func NewFileStore(g *gateway.Gateway) store.FileStore {
+func NewFileStore(g gateway.Gateway) store.FileStore {
 	store := &FileStore{g: g}
 	g.SetStore(store)
 	go func() {
-		err := g.Run()
+		err := g.Run(context.TODO())
 		if err != nil {
 			panic(err)
 		}
@@ -24,8 +25,12 @@ func NewFileStoreWithoutWeb() store.FileStore {
 	return &FileStore{}
 }
 
+type Gateway interface {
+	BandWidth() *store.Bandwidth
+}
+
 type FileStore struct {
-	g *gateway.Gateway
+	g Gateway
 }
 
 func (s *FileStore) Get(uuid string) (store.ReadableFile, error) {

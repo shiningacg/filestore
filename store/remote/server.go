@@ -12,7 +12,7 @@ import (
 	"net"
 )
 
-func NewStoreGRPCServer(addr string, g *gateway.Gateway, adder Adder, fs fs.FileStore, r *common.Reporter) *StoreServer {
+func NewStoreGRPCServer(addr string, g gateway.Gateway, adder Adder, fs fs.FileStore, r *common.Reporter) *StoreServer {
 	ss := &StoreServer{
 		addr:      addr,
 		g:         g,
@@ -44,18 +44,19 @@ func NewStoreGRPCServer(addr string, g *gateway.Gateway, adder Adder, fs fs.File
 
 type StoreServer struct {
 	addr string
-	g    *gateway.Gateway
+	g    gateway.Gateway
 	Adder
 	fs.FileStore
 	*common.Reporter
 }
 
+// TODO: 自动识别ip
 func (s StoreServer) report() *common.NodeInfo {
 	return &common.NodeInfo{
 		NodeId:      "center",
 		NodeType:    "store",
 		GRPCAddr:    s.addr,
-		GatewayAddr: s.g.PostUrl(""),
+		GatewayAddr: s.g.Host(),
 	}
 }
 

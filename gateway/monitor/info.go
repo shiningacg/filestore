@@ -1,4 +1,4 @@
-package gateway
+package monitor
 
 type UploadInfo struct {
 	Token   string

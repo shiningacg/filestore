@@ -3,6 +3,7 @@ package remote
 import (
 	"fmt"
 	"github.com/shiningacg/filestore/gateway"
+	"github.com/shiningacg/filestore/gateway/checker"
 	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/filestore/store/mock"
 	"github.com/shiningacg/mygin-frame-libs/log"
@@ -12,7 +13,7 @@ import (
 
 func TestNewStoreServer(t *testing.T) {
 	log.OpenLog(&log.Config{})
-	g := gateway.NewGateway(":8888", gateway.MockChecker{}, log.Default())
+	g := gateway.NewMyginGateway(":8888", checker.MockChecker{})
 	etcdConf := &common.EtcdConfig{EndPoint: []string{"127.0.0.1:2379"}}
 	store := mock.NewFileStore(g)
 	g.SetStore(store)
@@ -25,11 +26,11 @@ func TestNewStoreServer(t *testing.T) {
 
 func TestNewStoreServerWithRedisChecker(t *testing.T) {
 	log.OpenLog(&log.Config{})
-	checker, err := gateway.NewRedisChecker("127.0.0.1:6379", "")
+	checker, err := checker.NewRedisChecker("127.0.0.1:6379", "")
 	if err != nil {
 		panic(err)
 	}
-	g := gateway.NewGateway(":8888", checker, log.Default())
+	g := gateway.NewMyginGateway(":8888", checker)
 	etcdConf := &common.EtcdConfig{EndPoint: []string{"127.0.0.1:2379"}}
 	store := mock.NewFileStore(g)
 	g.SetStore(store)

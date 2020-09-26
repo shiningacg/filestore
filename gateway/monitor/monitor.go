@@ -1,4 +1,4 @@
-package gateway
+package monitor
 
 import (
 	"context"
@@ -56,10 +56,9 @@ func (b *DefaultMonitor) Bandwidth() *filestore.Bandwidth {
 	}
 }
 
-func NewMonitor(ctx context.Context) *DefaultMonitor {
+func NewMonitor() *DefaultMonitor {
 	input := make(chan *Record, 100)
 	return &DefaultMonitor{
-		ctx:     ctx,
 		records: make([]*Record, 0, 1000),
 		input:   input,
 	}
@@ -102,7 +101,11 @@ func (b *DefaultMonitor) AddRecord(record *Record) {
 }
 
 // 启动goroutine单线程处理记录
-func (b *DefaultMonitor) Run() {
+func (b *DefaultMonitor) Run(ctx context.Context) {
+	if b.ctx != nil {
+		return
+	}
+	b.ctx = ctx
 	// 开启定时任务
 	for {
 		select {
@@ -173,7 +176,7 @@ func copy(dst io.Writer, src io.Reader, stop func(int) bool) (uint64, error) {
 	var n, total int
 	var err error
 	// 创建缓存
-	var buffer = make([]byte, BufferSize)
+	var buffer = make([]byte, 1024)
 	for stop(n) {
 		var wt, w int
 		n, err = src.Read(buffer)

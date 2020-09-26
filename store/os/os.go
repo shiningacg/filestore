@@ -1,9 +1,11 @@
 package os
 
 import (
+	"context"
 	"errors"
 	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway"
+	"github.com/shiningacg/filestore/gateway/checker"
 	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/filestore/store/remote"
 	"github.com/shiningacg/mygin-frame-libs/log"
@@ -16,8 +18,8 @@ var (
 	ErrFileNotFound = errors.New("无法找到文件")
 )
 
-func NewOStore(config *StoreConfig, checker gateway.Checker, logger *log.Logger) *Store {
-	g := gateway.NewGateway(config.GatewayAddr, checker, logger)
+func NewOStore(config *StoreConfig, checker checker.Checker, logger *log.Logger) *Store {
+	g := gateway.NewMyginGateway(config.GatewayAddr, checker)
 	s := &Store{
 		gateway:      g,
 		storeManager: NewDefaultManager(config.StorePath),
@@ -25,7 +27,7 @@ func NewOStore(config *StoreConfig, checker gateway.Checker, logger *log.Logger)
 		db:           OpenBoltDB(config.StorePath+"/store.dat", logger),
 	}
 	g.SetStore(s)
-	go g.Run()
+	go g.Run(context.Background())
 	return s
 }
 
@@ -35,7 +37,7 @@ type StoreConfig struct {
 }
 
 type Store struct {
-	gateway      *gateway.Gateway
+	gateway      gateway.Gateway
 	storeManager StoreManager
 	logger       *log.Logger
 	db           *BoltDB

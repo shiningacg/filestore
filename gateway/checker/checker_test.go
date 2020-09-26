@@ -1,4 +1,4 @@
-package gateway
+package checker
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func TestSetChecker(t *testing.T) {
 		PostToken: "aaa",
 		Name:      "a.test",
 		Size:      1024,
-		Status:    false,
+		UUID:      "",
 	}
 	err := checker.Set(checkResult)
 	if err != nil {
@@ -30,4 +30,17 @@ func TestSetChecker(t *testing.T) {
 		panic(err)
 	}
 	fmt.Printf("%v", res)
+}
+
+func TestNewGrpcChecker(t *testing.T) {
+	grpcAddr := "127.0.0.1:5040"
+	checker, err := NewGrpcChecker(grpcAddr, "")
+	if err != nil {
+		panic(err)
+	}
+	f, err := checker.Get("111")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(f)
 }

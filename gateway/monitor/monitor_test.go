@@ -1,4 +1,4 @@
-package gateway
+package monitor
 
 import (
 	"bufio"
@@ -49,8 +49,8 @@ func TestAddRecord(t *testing.T) {
 		StartTime: 0,
 		EndTime:   uint64(time.Now().Unix()) + 1,
 	}
-	monitor := NewMonitor(context.Background())
-	go monitor.Run()
+	monitor := NewMonitor()
+	go monitor.Run(context.TODO())
 	monitor.AddRecord(record1)
 	// 第一次添加后，测试visit和bandwidth是否符合
 	time.Sleep(time.Millisecond * 10)
