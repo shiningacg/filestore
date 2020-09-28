@@ -1,6 +1,8 @@
 package common
 
-import "github.com/shirou/gopsutil/disk"
+import (
+	"github.com/shirou/gopsutil/disk"
+)
 
 type DiskStats struct {
 	Total uint64
