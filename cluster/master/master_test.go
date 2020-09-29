@@ -19,7 +19,7 @@ func TestNewMaster(t *testing.T) {
 	master := NewMaster(context.Background(), client, cluster.Service{
 		Name: "svc.file",
 	})
-	var evts = make(chan cluster.Event, 5)
+	var evts = make(chan *cluster.Event, 5)
 	master.Watcher.Events(evts)
 	fmt.Println("hi")
 	for evt := range evts {

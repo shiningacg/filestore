@@ -9,6 +9,7 @@ import (
 	ipfs "github.com/shiningacg/sn-ipfs"
 )
 
+// TODO: 允许外部传入配置
 func NewStore(gatewayAddr string, checker checker.Checker, logger *log.Logger) (fs.FileStore, error) {
 	s, err := ipfs.NewStore("127.0.0.1:5001", "127.0.0.1:8080")
 	if err != nil {

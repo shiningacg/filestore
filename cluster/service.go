@@ -9,7 +9,6 @@ import (
 type Service struct {
 	Name string
 	Id   string
-	Host []string
 	TTL  time.Duration
 }
 
