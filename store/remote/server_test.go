@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/shiningacg/filestore/gateway"
 	"github.com/shiningacg/filestore/gateway/checker"
-	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/filestore/store/mock"
 	"github.com/shiningacg/mygin-frame-libs/log"
 	"testing"
@@ -14,16 +13,16 @@ import (
 func TestNewStoreServer(t *testing.T) {
 	log.OpenLog(&log.Config{})
 	g := gateway.NewMyginGateway(":8888", checker.MockChecker{})
-	etcdConf := &common.EtcdConfig{EndPoint: []string{"127.0.0.1:2379"}}
 	store := mock.NewFileStore(g)
 	g.SetStore(store)
-	NewStoreGRPCServer("127.0.0.1:5060", g, MockAdder{}, store, common.NewReporter(etcdConf))
+	NewStoreGRPCServer("127.0.0.1:5060", MockAdder{}, store)
 	for {
 		fmt.Println(g.BandWidth())
 		time.Sleep(time.Second * 10)
 	}
 }
 
+// TODO： 重写！！！
 func TestNewStoreServerWithRedisChecker(t *testing.T) {
 	log.OpenLog(&log.Config{})
 	checker, err := checker.NewRedisChecker("127.0.0.1:6379", "")
@@ -31,10 +30,9 @@ func TestNewStoreServerWithRedisChecker(t *testing.T) {
 		panic(err)
 	}
 	g := gateway.NewMyginGateway(":8888", checker)
-	etcdConf := &common.EtcdConfig{EndPoint: []string{"127.0.0.1:2379"}}
 	store := mock.NewFileStore(g)
 	g.SetStore(store)
-	NewStoreGRPCServer("127.0.0.1:6666", g, MockAdder{}, store, common.NewReporter(etcdConf))
+	NewStoreGRPCServer("127.0.0.1:6666", MockAdder{}, store)
 	for {
 		fmt.Println(g.BandWidth())
 		time.Sleep(time.Second * 10)

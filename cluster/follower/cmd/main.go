@@ -10,20 +10,22 @@ import (
 )
 
 const (
-	CheckerAddr = "127.0.0.1:8000"
-	GatewayAddr = "0.0.0.0:8001"
-	GrpcAddr    = "0.0.0.0:8002"
+	CheckerAddr         = "127.0.0.1:8000"
+	GatewayAddr         = "0.0.0.0:8001"
+	GrpcAddr            = "0.0.0.0:8002"
+	AnnounceGatewayAddr = "127.0.0.1:8001"
+	AnnounceGrpcAddr    = "127.0.0.1:8002"
 )
 
 var Data = cluster.Data{
 	MetaData: cluster.MetaData{
 		Id:      "test",
-		Host:    []string{"127.0.0.1:"},
+		Host:    []string{AnnounceGrpcAddr},
 		Tag:     "",
 		Weight:  0,
 		Version: 0,
 	},
-	GatewayAddr: "",
+	GatewayAddr: AnnounceGatewayAddr,
 	Entry:       false,
 	Exit:        false,
 	Cap:         0,

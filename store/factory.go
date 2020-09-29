@@ -5,6 +5,7 @@ import (
 	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway"
 	"github.com/shiningacg/filestore/gateway/checker"
+	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/mygin-frame-libs/log"
 )
 
@@ -16,10 +17,26 @@ type FactoryStore interface {
 	GetLogger() *log.Logger
 }
 
-func NewStore(store FactoryStore, gatewayAddr string, checker checker.Checker, logger *log.Logger) fs.FileStore {
+type store struct {
+	FactoryStore
+	net common.Network
+}
+
+func (s *store) Network() *fs.Network {
+	cur := s.net.Stats()
+	return &fs.Network{
+		Upload:   cur.Upload.FiveSec,
+		Download: cur.Download.FiveSec,
+	}
+}
+
+// 通过外层保证
+func NewStore(st FactoryStore, gatewayAddr string, checker checker.Checker, logger *log.Logger) fs.FileStore {
 	gtw := gateway.NewMyginGateway(gatewayAddr, checker)
-	store.SetGateway(gtw)
-	gtw.SetStore(store)
+	network := common.NewDefaultNetwork(context.Background())
+	st.SetGateway(gtw)
+	gtw.SetStore(st)
+	// 启动gateway
 	go func() {
 		for {
 			err := gtw.Run(context.TODO())
@@ -28,5 +45,8 @@ func NewStore(store FactoryStore, gatewayAddr string, checker checker.Checker, l
 			}
 		}
 	}()
-	return store
+	return &store{
+		FactoryStore: st,
+		net:          network,
+	}
 }

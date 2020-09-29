@@ -28,9 +28,10 @@ func TestNewMaster(t *testing.T) {
 }
 
 func TestNewRemoteStore(t *testing.T) {
-	store, err := remote.NewRemoteStore("127.0.0.1:8888")
+	store, err := remote.NewRemoteStore("127.0.0.1:8002")
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(store.Network())
 	defer store.Close()
 }

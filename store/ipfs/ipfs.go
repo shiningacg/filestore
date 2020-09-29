@@ -18,8 +18,7 @@ func NewStore(gatewayAddr string, checker checker.Checker, logger *log.Logger) (
 	st := &Store{
 		ipfs: s,
 	}
-	store.NewStore(st, gatewayAddr, checker, logger)
-	return st, nil
+	return store.NewStore(st, gatewayAddr, checker, logger), nil
 }
 
 type Store struct {
