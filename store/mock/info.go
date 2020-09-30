@@ -10,6 +10,10 @@ func NewInfoStore() store.InfoStore {
 	return &InfoStore{}
 }
 
+func NewInfoStoreWithGateway() store.InfoStore {
+	return nil
+}
+
 type InfoStore struct {
 }
 

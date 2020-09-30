@@ -1,15 +1,11 @@
 package os
 
 import (
-	"context"
 	"errors"
 	fs "github.com/shiningacg/filestore"
-	"github.com/shiningacg/filestore/gateway"
-	"github.com/shiningacg/filestore/gateway/checker"
 	"github.com/shiningacg/filestore/store/common"
-	"github.com/shiningacg/filestore/store/remote"
-	"github.com/shiningacg/mygin-frame-libs/log"
 	"io"
+	"log"
 	"os"
 )
 
@@ -18,30 +14,20 @@ var (
 	ErrFileNotFound = errors.New("无法找到文件")
 )
 
-func NewOStore(config *StoreConfig, checker checker.Checker, logger *log.Logger) *Store {
-	g := gateway.NewMyginGateway(config.GatewayAddr, checker)
+func NewCore(storePath string, logger *log.Logger) (*Store, error) {
+	// TODO:测试目录是否可写
 	s := &Store{
-		gateway:      g,
-		storeManager: NewDefaultManager(config.StorePath),
+		storeManager: NewDefaultManager(storePath),
 		logger:       logger,
-		db:           OpenBoltDB(config.StorePath+"/store.dat", logger),
+		db:           OpenBoltDB(storePath+"/store.dat", logger),
 	}
-	g.SetStore(s)
-	go g.Run(context.Background())
-	return s
-}
-
-type StoreConfig struct {
-	GatewayAddr string
-	StorePath   string
+	return s, nil
 }
 
 type Store struct {
-	gateway      gateway.Gateway
 	storeManager StoreManager
 	logger       *log.Logger
 	db           *BoltDB
-	remote.Adder
 }
 
 func (s *Store) Get(uuid string) (fs.ReadableFile, error) {
@@ -63,13 +49,6 @@ func (s *Store) Add(file fs.ReadableFile) error {
 		return ErrEmptyID
 	}
 	// 测试是否可读,如果不可读，则调用adder去创建一个可读到reader
-	if false {
-		f := s.Find(file)
-		if f == nil {
-			return ErrFileNotFound
-		}
-		file = f
-	}
 	dbFile := s.storeFileToDBFile(file)
 	f, err := os.Create(dbFile.Path)
 	if err != nil {
@@ -86,15 +65,6 @@ func (s *Store) Add(file fs.ReadableFile) error {
 	return s.db.Add(dbFile)
 }
 
-func (s *Store) storeFileToDBFile(file fs.ReadableFile) *DBFile {
-	dbFile := &DBFile{
-		UUID: file.UUID(),
-		Name: file.Name(),
-	}
-	dbFile.Path = s.storeManager.GetStorePath(file)
-	return dbFile
-}
-
 func (s *Store) Remove(uuid string) error {
 	file := s.db.Get(uuid)
 	if file == nil {
@@ -106,6 +76,15 @@ func (s *Store) Remove(uuid string) error {
 		s.logger.Fatal(err)
 	}
 	return s.db.Delete(file.UUID)
+}
+
+func (s *Store) storeFileToDBFile(file fs.ReadableFile) *DBFile {
+	dbFile := &DBFile{
+		UUID: file.UUID(),
+		Name: file.Name(),
+	}
+	dbFile.Path = s.storeManager.GetStorePath(file)
+	return dbFile
 }
 
 func (s *Store) fromDBFile(file *DBFile) fs.ReadableFile {
@@ -121,6 +100,7 @@ func (s *Store) fromDBFile(file *DBFile) fs.ReadableFile {
 	return fs.NewReadableFile(bs, f)
 }
 
+// 废弃的方法
 func (s *Store) Space() *fs.Space {
 	space := &fs.Space{}
 	dbInfo := s.db.Info()
@@ -134,12 +114,4 @@ func (s *Store) Space() *fs.Space {
 		space.Cap = diskStats.Total - diskStats.Used
 	}
 	return space
-}
-
-func (s *Store) Network() *fs.Network {
-	panic("implement me")
-}
-
-func (s *Store) Gateway() *fs.Bandwidth {
-	return s.gateway.BandWidth()
 }

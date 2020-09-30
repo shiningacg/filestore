@@ -2,24 +2,37 @@ package store
 
 import (
 	"context"
+	"errors"
 	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway"
-	"github.com/shiningacg/filestore/gateway/checker"
 	"github.com/shiningacg/filestore/store/common"
-	"github.com/shiningacg/mygin-frame-libs/log"
+	"github.com/shiningacg/filestore/store/core/ipfs"
+	"github.com/shiningacg/filestore/store/core/os"
+	"log"
+	os2 "os"
 )
 
-type FactoryStore interface {
-	fs.FileStore
-	SetGateway(gateway gateway.Gateway)
-	SetLogger(logger *log.Logger)
-	GetGateway() gateway.Gateway
-	GetLogger() *log.Logger
-}
+type Core fs.FileFS
 
 type store struct {
-	FactoryStore
+	cfg Config
+	Core
+	gtw fs.Gateway
 	net common.Network
+}
+
+func (s *store) Space() *fs.Space {
+	stats := common.DiskUsage(s.cfg.Path)
+	return &fs.Space{
+		Cap:   stats.Total - stats.Used,
+		Total: stats.Total,
+		Free:  stats.Total - stats.Used,
+		Used:  stats.Used,
+	}
+}
+
+func (s *store) Gateway() *fs.Bandwidth {
+	return s.gtw.BandWidth()
 }
 
 func (s *store) Network() *fs.Network {
@@ -30,23 +43,49 @@ func (s *store) Network() *fs.Network {
 	}
 }
 
-// 通过外层保证
-func NewStore(st FactoryStore, gatewayAddr string, checker checker.Checker, logger *log.Logger) fs.FileStore {
-	gtw := gateway.NewMyginGateway(gatewayAddr, checker)
-	network := common.NewDefaultNetwork(context.Background())
-	st.SetGateway(gtw)
-	gtw.SetStore(st)
-	// 启动gateway
-	go func() {
-		for {
-			err := gtw.Run(context.TODO())
-			if err != nil {
-				panic(err)
-			}
-		}
-	}()
-	return &store{
-		FactoryStore: st,
-		net:          network,
+func (s *store) Run(ctx context.Context) error {
+	err := s.gtw.Run(ctx)
+	if err != nil {
+		panic(err)
 	}
+	return nil
+}
+
+// 通过外层保证
+func NewStore(config Config) (*store, error) {
+	// 创建core对象
+	core, err := newCore(&config, nil)
+	if err != nil {
+		return nil, err
+	}
+	// 创建checker
+	gtw, err := gateway.NewMyginGateway(config.Gateway, gateway.GRPC, config.CheckerAddr, "")
+	if err != nil {
+		return nil, err
+	}
+	return Combine(gtw, core), nil
+}
+
+func Combine(gtw fs.Gateway, core Core) *store {
+	network := common.NewDefaultNetwork(context.Background())
+	gtw.SetStore(core)
+	return &store{
+		Core: core,
+		gtw:  gtw,
+		net:  network,
+	}
+}
+
+// TODO: 选用一个更好的log
+func newCore(config *Config, logger *log.Logger) (Core, error) {
+	if logger == nil {
+		logger = log.New(os2.Stdout, "", log.Ldate)
+	}
+	switch config.Type {
+	case IPFS:
+		return ipfs.NewCore(logger)
+	case OS:
+		return os.NewCore(config.Path, logger)
+	}
+	return nil, errors.New("未知仓库")
 }

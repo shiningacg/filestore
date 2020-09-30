@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	fs "github.com/shiningacg/filestore"
-	checker2 "github.com/shiningacg/filestore/gateway/checker"
+	"github.com/shiningacg/filestore/gateway/checker"
 	monitor2 "github.com/shiningacg/filestore/gateway/monitor"
 	"github.com/shiningacg/mygin"
 	"io"
@@ -16,12 +16,17 @@ import (
 	"os"
 )
 
+const (
+	GRPC string = "GRPC"
+	HTTP string = "HTTP"
+)
+
 type MyginGateway struct {
 	ctx context.Context
 	cf  func()
 	*mygin.Engine
 	// 上传监控器
-	checker checker2.Checker
+	checker checker.Checker
 	// 流量监控器
 	monitor *monitor2.DefaultMonitor
 	// 监听地址
@@ -30,7 +35,22 @@ type MyginGateway struct {
 	fs fs.FileFS
 }
 
-func NewMyginGateway(addr string, checker checker2.Checker) *MyginGateway {
+func NewMyginGateway(addr string, checkerType, checkerAddr, checkKey string) (*MyginGateway, error) {
+	var (
+		ck  checker.Checker
+		err error
+	)
+	switch checkerType {
+	case GRPC:
+		ck, err = checker.NewGrpcChecker(checkerAddr, checkKey)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return DesignMyginGateway(addr, ck), nil
+}
+
+func DesignMyginGateway(addr string, checker checker.Checker) *MyginGateway {
 	hs := &MyginGateway{
 		addr:    addr,
 		checker: checker,
@@ -46,7 +66,7 @@ func (g *MyginGateway) BandWidth() *fs.Bandwidth {
 	return g.monitor.Bandwidth()
 }
 
-func (g *MyginGateway) SetStore(store fs.FileStore) {
+func (g *MyginGateway) SetStore(store fs.FileFS) {
 	g.fs = store
 }
 
@@ -57,7 +77,7 @@ func (g *MyginGateway) Host() string {
 	return g.addr
 }
 
-func (g *MyginGateway) Reset(addr string, checker checker2.Checker) error {
+func (g *MyginGateway) Reset(addr string, checker checker.Checker) error {
 	if !g.Closed() {
 		return errors.New("服务还未停止")
 	}
@@ -128,6 +148,7 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 	}
 }
 
+// TODO： 没有checker的情况下允许所有的请求
 // Download 处理用户的下载请求
 func (g *MyginGateway) Upload(ctx *mygin.Context) {
 	// 判断token是否有效，同时获取最大上传限制

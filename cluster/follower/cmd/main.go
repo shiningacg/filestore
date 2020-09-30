@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
 	"github.com/shiningacg/filestore/cluster/follower"
-	"github.com/shiningacg/filestore/gateway/checker"
-	"github.com/shiningacg/filestore/store/ipfs"
+	"github.com/shiningacg/filestore/store"
 	"github.com/shiningacg/filestore/store/remote"
 )
 
@@ -17,46 +17,51 @@ const (
 	AnnounceGrpcAddr    = "127.0.0.1:8002"
 )
 
-var Data = cluster.Data{
-	MetaData: cluster.MetaData{
-		Id:      "test",
-		Host:    []string{AnnounceGrpcAddr},
-		Tag:     "",
-		Weight:  0,
-		Version: 0,
+var config = follower.Config{
+	Store: store.Config{
+		Type:    "ipfs",
+		Path:    "",
+		Gateway: GatewayAddr,
+		Plugin: store.Plugin{
+			AdderAddr:   "",
+			CheckerAddr: CheckerAddr,
+		},
 	},
-	GatewayAddr: AnnounceGatewayAddr,
-	Entry:       false,
-	Exit:        false,
-	Cap:         0,
-}
-
-var Service = cluster.Service{
-	Name: "svc.file",
-	Id:   "test",
-	TTL:  3,
+	Etcd: []string{"127.0.0.1:2379"},
+	Service: cluster.Service{
+		Name: "svc.file",
+		Id:   "test",
+		TTL:  3,
+	},
+	Data: cluster.Data{
+		MetaData: cluster.MetaData{
+			Id:      "test",
+			Host:    []string{AnnounceGrpcAddr},
+			Tag:     "",
+			Weight:  0,
+			Version: 0,
+		},
+		GatewayAddr: AnnounceGatewayAddr,
+		Entry:       true,
+		Exit:        true,
+		Cap:         0,
+	},
 }
 
 // ipfs store
 func main() {
-	// 创建checker
-	ck, err := checker.NewGrpcChecker(CheckerAddr, "")
+	st, err := store.NewStore(config.ToStoreConfig())
 	if err != nil {
 		panic(err)
 	}
-	// 创建store
-	store, err := ipfs.NewStore(GatewayAddr, ck, nil)
-	if err != nil {
-		panic(err)
-	}
-	// 创建adder
 	adder := remote.MockAdder{}
 	// 启动grpc服务
-	remote.NewStoreGRPCServer(GrpcAddr, adder, store)
+	remote.NewStoreGRPCServer(GrpcAddr, adder, st)
 	// 连接集群
 	etcd := ConnectEtcd()
 	//
-	app := follower.NewFollower(etcd, Data, Service)
+	app := follower.NewFollower(etcd, config.Data, config.Service)
+	go st.Run(context.Background())
 	app.Run()
 }
 

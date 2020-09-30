@@ -3,7 +3,7 @@ package mock
 import (
 	store "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/cluster"
-	mc "github.com/shiningacg/filestore/store/mock"
+	mock2 "github.com/shiningacg/filestore/store/mock"
 )
 
 func NewNode() *Node {
@@ -21,7 +21,7 @@ func NewNode() *Node {
 			Exit:        true,
 			Cap:         1024,
 		},
-		InfoStore: mc.NewInfoStore(),
+		InfoStore: mock2.NewInfoStore(),
 	}
 }
 

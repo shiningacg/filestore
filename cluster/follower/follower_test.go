@@ -27,7 +27,6 @@ var data = cluster.Data{
 var service = cluster.Service{
 	Name: "svc.file",
 	Id:   "center",
-	Host: []string{"127.0.0.1:5060"},
 	TTL:  time.Second * 3,
 }
 

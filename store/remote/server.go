@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	fs "github.com/shiningacg/filestore"
-	"github.com/shiningacg/filestore/gateway"
-	"github.com/shiningacg/filestore/store"
-	"github.com/shiningacg/filestore/store/common"
 	"github.com/shiningacg/filestore/store/remote/rpc"
 	"google.golang.org/grpc"
 	"log"
@@ -14,12 +11,10 @@ import (
 )
 
 func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore) *StoreServer {
-	st := fs.(store.FactoryStore)
 	ss := &StoreServer{
 		addr:      addr,
-		g:         st.GetGateway(),
 		Adder:     adder,
-		FileStore: st,
+		FileStore: fs,
 	}
 	sk, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -38,19 +33,8 @@ func NewStoreGRPCServer(addr string, adder Adder, fs fs.FileStore) *StoreServer 
 
 type StoreServer struct {
 	addr string
-	g    gateway.Gateway
 	Adder
 	fs.FileStore
-}
-
-// TODO: 自动识别ip
-func (s StoreServer) report() *common.NodeInfo {
-	return &common.NodeInfo{
-		NodeId:      "center",
-		NodeType:    "store",
-		GRPCAddr:    s.addr,
-		GatewayAddr: s.g.Host(),
-	}
 }
 
 func (s StoreServer) Get(ctx context.Context, uuid *rpc.UUID) (*rpc.File, error) {
