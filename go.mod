@@ -5,7 +5,7 @@ go 1.15
 replace (
 	github.com/coreos/bbolt v1.3.4 => go.etcd.io/bbolt v1.3.4
 	github.com/coreos/go-systemd => github.com/coreos/go-systemd/v22 v22.0.0
-	github.com/shiningacg/ServiceFile => /Users/shlande/go/src/github.com/shlande/ServiceFile
+	// github.com/shiningacg/ServiceFile => /Users/shlande/go/src/github.com/shlande/ServiceFile
 	google.golang.org/grpc v1.32.0 => google.golang.org/grpc v1.26.0
 )
 
