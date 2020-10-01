@@ -2,7 +2,6 @@ package master
 
 import (
 	"context"
-	"fmt"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
 	"log"
@@ -130,7 +129,6 @@ func (m *Master) watch() {
 		case <-m.ctx.Done():
 			return
 		case evt := <-m.recv:
-			fmt.Println(evt.Action)
 			switch evt.Action {
 			case cluster.PUT:
 				// 节点是否已经存在过了

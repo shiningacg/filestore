@@ -45,7 +45,6 @@ func (n *Node) Update(node *cluster.Data) error {
 	data := &n.data
 	if data.IsHostChange(node.MetaData) {
 		for i, addr := range node.Host {
-			fmt.Println(addr)
 			store, err := remote.NewRemoteStore(addr)
 			// 所有地址都无法连接
 			if err != nil && i == len(node.Host)-1 {
@@ -77,7 +76,7 @@ func (n *Node) Network() *fs.Network {
 }
 
 func (n *Node) Entry(token string) string {
-	return n.data.GatewayAddr + "/upload/" + token
+	return "http://" + n.data.GatewayAddr + "/upload/" + token
 }
 
 func (n *Node) Exit(fid string) string {

@@ -3,7 +3,6 @@ package follower
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
 	"log"
@@ -48,7 +47,7 @@ func (f *Follower) Run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("registered")
+	log.Println("节点注册成功！")
 	ch := make(chan *cluster.Event, 10)
 	f.Watcher.Events(ch)
 	go f.Watcher.Watch(f.ctx)
@@ -70,11 +69,11 @@ func (f *Follower) Run() error {
 	}
 }
 
+// TODO: 自动化的重新加载gateway
 // 对改变对配置进行响应
 func (f *Follower) ChangeData(data *cluster.Data) {
 	log.Printf("更新配置：Version-%v", data.Version)
 	// 判断那些内容发生了改变进行响应的重置
-
 	// 最后更新数据
 	f.data = *data
 	log.Println("更新配置成功")
