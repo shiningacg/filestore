@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/go-redis/redis/v8"
-	svc "github.com/shiningacg/kit-file"
+	svc "github.com/shiningacg/ServiceFile"
 	"google.golang.org/grpc"
 	"time"
 )
