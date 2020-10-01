@@ -47,7 +47,7 @@ func (m *Master) Nodes() cluster.Nodes {
 // Entries 获取所有入口节点
 func (m *Master) Entries() cluster.Nodes {
 	nodes := make(cluster.Nodes, 0, len(m.nodes))
-	for _, v := range nodes {
+	for _, v := range m.nodes {
 		if v.Data().IsEntry() {
 			nodes = append(nodes, v)
 		}

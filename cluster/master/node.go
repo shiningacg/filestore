@@ -54,6 +54,7 @@ func (n *Node) Update(node *cluster.Data) error {
 			n.Store = store
 		}
 	}
+	data.GatewayAddr = node.GatewayAddr
 	data.Exit = node.Entry
 	data.Entry = node.Entry
 	data.Cap = node.Cap
@@ -80,5 +81,5 @@ func (n *Node) Entry(token string) string {
 }
 
 func (n *Node) Exit(fid string) string {
-	return n.data.GatewayAddr + "/download/" + fid
+	return "http://" + n.data.GatewayAddr + "/download/" + fid
 }
