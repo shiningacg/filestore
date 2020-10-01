@@ -136,16 +136,16 @@ func (m *Master) watch() {
 				// 节点是否已经存在过了
 				if node := m.nodes.Node(evt.Id); node != nil {
 					// 版本号不同，那么更新node
-					data := node.Data()
-					if data.Version != evt.Version {
-						err := node.Update(evt.Data)
-						// 更新信息失败，节点暂时不可用，进行删除
-						// TODO：让node感知到错误的发生从而进行一次回滚？
-						if err != nil {
-							log.Println(err)
-							m.nodes.Delete(node.ID())
-						}
+					// data := node.Data()
+					// if data.Version != evt.Version {
+					err := node.Update(evt.Data)
+					// 更新信息失败，节点暂时不可用，进行删除
+					// TODO：让node感知到错误的发生从而进行一次回滚？
+					if err != nil {
+						log.Println(err)
+						m.nodes.Delete(node.ID())
 					}
+					// }
 				} else { // 节点是新加入的
 					node, err := NewNodeFromData(evt.Data)
 					if err != nil {

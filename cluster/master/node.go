@@ -42,7 +42,7 @@ func (n *Node) ID() string {
 // Update 更新节点的信息，如果地址发送了改变那么会重新建立grpc连接
 func (n *Node) Update(node *cluster.Data) error {
 	// 如果监听地址变化了，那么就需要重新加载
-	data := n.data
+	data := &n.data
 	if data.IsHostChange(node.MetaData) {
 		for i, addr := range node.Host {
 			fmt.Println(addr)
@@ -55,7 +55,7 @@ func (n *Node) Update(node *cluster.Data) error {
 		}
 	}
 	data.Exit = node.Entry
-	data.Exit = node.Exit
+	data.Entry = node.Entry
 	data.Cap = node.Cap
 	data.MetaData.Update(node.MetaData)
 	return nil
