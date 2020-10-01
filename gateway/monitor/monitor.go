@@ -3,7 +3,6 @@ package monitor
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/shiningacg/filestore"
 	"io"
 	"time"
@@ -76,7 +75,6 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 	n, err := copy(dst, src, func(i int) bool {
 		b.AddRecord(&Record{RequestID: r.RequestID, Bandwidth: uint64(i)})
 		total += uint64(i)
-		fmt.Println(total, maxSize)
 		if maxSize == 0 {
 			return true
 		}

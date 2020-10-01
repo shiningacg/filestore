@@ -124,7 +124,7 @@ func (m *Master) watch() {
 	if err != nil {
 		log.Println(err)
 	}
-	m.send(evts...)
+	m.sendSelf(evts...)
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -170,5 +170,11 @@ func (m *Master) send(events ...*cluster.Event) {
 		for _, c := range m.repo {
 			c <- evt
 		}
+	}
+}
+
+func (m *Master) sendSelf(events ...*cluster.Event) {
+	for _, evt := range events {
+		m.recv <- evt
 	}
 }

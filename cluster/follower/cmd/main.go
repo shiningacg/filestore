@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	CheckerAddr         = "127.0.0.1:8000"
+	CheckerAddr         = "127.0.0.1:5040"
 	GatewayAddr         = "0.0.0.0:8001"
 	GrpcAddr            = "0.0.0.0:8002"
 	AnnounceGatewayAddr = "127.0.0.1:8001"
