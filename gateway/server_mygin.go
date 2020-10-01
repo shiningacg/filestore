@@ -190,7 +190,7 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 		ctx.Status(400)
 		return
 	}
-	if size != checkResult.Size {
+	if size != checkResult.Size && checkResult.Size != 0 {
 		// 文件大小不对
 		ctx.Status(400)
 		return
@@ -215,10 +215,11 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 	if err != nil {
 		l.Fatal(err)
 		// writeError(w, 500, ErrInternalServer)
-		ctx.Status(400)
+		ctx.Status(500)
 		return
 	}
 	// 写入回复
+	ctx.Body([]byte(`{"uuid":"` + rf.UUID() + `"}`))
 	ctx.Status(200)
 	return
 }

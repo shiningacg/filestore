@@ -25,6 +25,14 @@ func TestStore_Add(t *testing.T) {
 	}
 }
 
+func TestStore_Space(t *testing.T) {
+	s := testNewRemoteStore().Space()
+	if s == nil {
+		panic("nil")
+	}
+	fmt.Println(s)
+}
+
 func TestStore_Remove(t *testing.T) {
 	var bf = &fs.BaseFileStruct{}
 	bf.SetName("test.txt")

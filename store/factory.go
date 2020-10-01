@@ -22,7 +22,11 @@ type store struct {
 }
 
 func (s *store) Space() *fs.Space {
+	if core, ok := s.Core.(*os.Store); ok {
+		return core.Space()
+	}
 	stats := common.DiskUsage(s.cfg.Path)
+	// cap是当前磁盘的容量
 	return &fs.Space{
 		Cap:   stats.Total - stats.Used,
 		Total: stats.Total,
@@ -63,7 +67,9 @@ func NewStore(config Config) (*store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Combine(gtw, core), nil
+	store := Combine(gtw, core)
+	store.cfg = config
+	return store, nil
 }
 
 func Combine(gtw fs.Gateway, core Core) *store {

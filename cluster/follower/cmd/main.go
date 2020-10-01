@@ -20,7 +20,7 @@ const (
 var config = follower.Config{
 	Store: store.Config{
 		Type:    "ipfs",
-		Path:    "",
+		Path:    "/",
 		Gateway: GatewayAddr,
 		Plugin: store.Plugin{
 			AdderAddr:   "",
@@ -44,7 +44,7 @@ var config = follower.Config{
 		GatewayAddr: AnnounceGatewayAddr,
 		Entry:       true,
 		Exit:        true,
-		Cap:         0,
+		Cap:         1024 * 1024 * 1024 * 5,
 	},
 }
 
