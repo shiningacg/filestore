@@ -119,6 +119,7 @@ func (g *MyginGateway) LoadRouter(engine *mygin.Engine) {
 	r.Use(g.RequestID)
 	// TODO： 添加header方法支持，提前查询文件大小
 	r.Get("/download/:fid").Do(g.Download)
+	r.Head("/download/:fid").Do(g.DownloadHead)
 	r.Post("/upload/:token").Use().Do(g.Upload)
 }
 
@@ -238,7 +239,7 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 }
 
 func (g *MyginGateway) DownloadHead(ctx *mygin.Context) {
-	file, err := g.fs.Get("")
+	file, err := g.fs.Get(ctx.RouterValue("fid"))
 	if err != nil {
 		fmt.Println(err)
 		ctx.Status(404)
