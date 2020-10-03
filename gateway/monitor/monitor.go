@@ -65,23 +65,22 @@ func NewMonitor() *DefaultMonitor {
 
 // 协助拷贝数据，同时进行流量记录
 func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.Reader) (uint64, error) {
-	var total uint64
+	var remain = int(maxSize)
 	b.addRecord(&Record{
 		RequestID: r.RequestID,
 		Ip:        r.Ip,
 		FileID:    r.FileID,
 		StartTime: uint64(time.Now().Unix()),
 	})
-	n, err := copy(dst, src, func(i int) bool {
+	n, err := copy(dst, src, func(i int) int {
 		b.AddRecord(&Record{RequestID: r.RequestID, Bandwidth: uint64(i)})
-		total += uint64(i)
+		remain -= i
+		// 不设限的copy
 		if maxSize == 0 {
-			return true
+			return 1024
 		}
-		if total >= maxSize {
-			return false
-		}
-		return true
+		// 剩余内容
+		return remain
 	})
 	b.AddRecord(&Record{RequestID: r.RequestID, EndTime: uint64(time.Now().Unix())})
 	if n > maxSize && maxSize != 0 {
@@ -170,14 +169,17 @@ func (b *DefaultMonitor) getRecord(duration uint64) []*Record {
 	return b.records[index:]
 }
 
-func copy(dst io.Writer, src io.Reader, stop func(int) bool) (uint64, error) {
+func copy(dst io.Writer, src io.Reader, stop func(int) int) (uint64, error) {
 	var n, total int
 	var err error
 	// 创建缓存
 	var buffer = make([]byte, 1024)
-	for stop(n) {
+	for remain := stop(n); remain > 0; {
 		var wt, w int
 		n, err = src.Read(buffer)
+		if n > remain {
+			n = remain
+		}
 		if err == io.EOF {
 			err = nil
 			break

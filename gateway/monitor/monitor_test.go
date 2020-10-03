@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"fmt"
 	store "github.com/shiningacg/filestore"
 	"os"
 	"reflect"
@@ -105,8 +104,5 @@ func TestAddRecord(t *testing.T) {
 func TestCopy(t *testing.T) {
 	f, _ := os.Create("test")
 	buffer := bufio.NewReader(bytes.NewBuffer([]byte("aaa")))
-	copy(f, buffer, func(i int) bool {
-		fmt.Println(i)
-		return true
-	})
+	NewMonitor().Copy(2, &Record{RequestID: "1"}, f, buffer)
 }

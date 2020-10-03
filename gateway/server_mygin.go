@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	fs "github.com/shiningacg/filestore"
 	"github.com/shiningacg/filestore/gateway/checker"
-	monitor2 "github.com/shiningacg/filestore/gateway/monitor"
+	mnt "github.com/shiningacg/filestore/gateway/monitor"
 	"github.com/shiningacg/mygin"
 	"io"
 	l "log"
@@ -28,7 +28,7 @@ type MyginGateway struct {
 	// 上传监控器
 	checker checker.Checker
 	// 流量监控器
-	monitor *monitor2.DefaultMonitor
+	monitor *mnt.DefaultMonitor
 	// 监听地址
 	addr string
 	// 存放文件的仓库，能够通过id存放和获取文件
@@ -55,7 +55,7 @@ func DesignMyginGateway(addr string, checker checker.Checker) *MyginGateway {
 		addr:    addr,
 		checker: checker,
 		Engine:  mygin.New(),
-		monitor: monitor2.NewMonitor(),
+		monitor: mnt.NewMonitor(),
 	}
 	hs.LoadRouter(hs.Engine)
 	return hs
@@ -84,7 +84,7 @@ func (g *MyginGateway) Reset(addr string, checker checker.Checker) error {
 	if checker != nil {
 		g.checker = checker
 	}
-	g.monitor = monitor2.NewMonitor()
+	g.monitor = mnt.NewMonitor()
 	g.ctx = nil
 	g.addr = addr
 	return nil
@@ -117,6 +117,7 @@ func (g *MyginGateway) Run(ctx context.Context) error {
 func (g *MyginGateway) LoadRouter(engine *mygin.Engine) {
 	r := engine.Router()
 	r.Use(g.RequestID)
+	// TODO： 添加header方法支持，提前查询文件大小
 	r.Get("/download/:fid").Do(g.Download)
 	r.Post("/upload/:token").Use().Do(g.Upload)
 }
@@ -132,18 +133,30 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 		ctx.Status(404)
 		return
 	}
+	// 获取要发送的文件范围
+	// -1 为取无穷
+	rg := ParseRange(ctx.Request.Header.Get("Range"))
+	copySize := rg[1] - rg[0]
+	if copySize <= 0 {
+		copySize = int(file.Size())
+	}
+	// 调整读取位置
+	file.Seek(int64(rg[0]), io.SeekStart)
 	// 设置为原生操作
 	ctx.Proto()
 	// 设置head为attachment
 	writer := ctx.Write
 	writer.WriteHeader(200)
+	// 设置响应头
+	writer.Header().Set("Content-Length", fmt.Sprint(copySize))
 	writer.Header().Set("Content-Disposition", "attachment; filename="+file.Name())
 	// 开始传输文件
-	_, err = g.copyWithoutLimit(&monitor2.Record{RequestID: requestID, FileID: fid}, writer, file)
-	if err != nil {
+	_, err = g.copyWithLimit(uint64(copySize), &mnt.Record{RequestID: requestID, FileID: fid}, writer, file)
+	if err != nil && err != mnt.ErrReachMaxSize {
 		// 判断socket是否关闭
 		// 打日志
-		l.Fatal(err)
+		// l.Fatal(err)
+		l.Println(err)
 		return
 	}
 }
@@ -179,8 +192,8 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 		}
 	}()
 	// 开始读取
-	size, err := g.copyWithLimit(checkResult.Size, &monitor2.Record{RequestID: token, FileID: token}, f, file)
-	if err == monitor2.ErrReachMaxSize {
+	size, err := g.copyWithLimit(checkResult.Size, &mnt.Record{RequestID: token, FileID: token}, f, file)
+	if err == mnt.ErrReachMaxSize {
 		// writeError(w, 400, err)
 		ctx.Status(400)
 		return
@@ -224,6 +237,18 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 	return
 }
 
+func (g *MyginGateway) DownloadHead(ctx *mygin.Context) {
+	file, err := g.fs.Get("")
+	if err != nil {
+		fmt.Println(err)
+		ctx.Status(404)
+		return
+	}
+	// 设置大小
+	ctx.Header("Content-Length", fmt.Sprint(file.Size()))
+	return
+}
+
 func (g *MyginGateway) RequestID(ctx *mygin.Context) {
 	rid := uuid.New().String()
 	ctx.Set("RequestID", rid)
@@ -232,12 +257,12 @@ func (g *MyginGateway) RequestID(ctx *mygin.Context) {
 }
 
 // copyWithLimit 复制内容，但大小不会超过MaxUploadSize
-func (g *MyginGateway) copyWithLimit(maxSize uint64, r *monitor2.Record, dst io.Writer, src io.Reader) (uint64, error) {
+func (g *MyginGateway) copyWithLimit(maxSize uint64, r *mnt.Record, dst io.Writer, src io.Reader) (uint64, error) {
 	return g.monitor.Copy(maxSize, r, dst, src)
 }
 
 // copyWithLimit 复制内容，大小不受限制
-func (g *MyginGateway) copyWithoutLimit(r *monitor2.Record, dst io.Writer, src io.Reader) (uint64, error) {
+func (g *MyginGateway) copyWithoutLimit(r *mnt.Record, dst io.Writer, src io.Reader) (uint64, error) {
 	return g.monitor.Copy(0, r, dst, src)
 }
 
