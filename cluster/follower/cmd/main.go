@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
 	"github.com/shiningacg/filestore/cluster/follower"
 	"github.com/shiningacg/filestore/store"
 	"github.com/shiningacg/filestore/store/remote"
+	"go.etcd.io/etcd/clientv3"
 )
 
 const (

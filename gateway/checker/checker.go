@@ -113,7 +113,7 @@ func (g *GrpcChecker) Get(token string) (*CheckResult, error) {
 		PostToken: token,
 		UUID:      "",
 		Name:      info.Name,
-		Size:      info.Size_,
+		Size:      info.Size,
 	}, nil
 }
 

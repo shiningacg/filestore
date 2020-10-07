@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
 	"github.com/shiningacg/filestore/cluster"
+	"go.etcd.io/etcd/clientv3"
 	"log"
 )
 
