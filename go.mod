@@ -3,14 +3,13 @@ module github.com/shiningacg/filestore
 go 1.15
 
 replace (
-	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.4
 	// github.com/shiningacg/ServiceFile => /Users/shlande/go/src/github.com/shlande/ServiceFile
-	google.golang.org/grpc => google.golang.org/grpc v1.27.1
+	go.etcd.io/etcd => go.etcd.io/etcd v0.0.0-20200824191128-ae9734ed278b
+	google.golang.org/grpc => google.golang.org/grpc v1.29.1
 )
 
 require (
 	github.com/boltdb/bolt v1.3.1
-	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/go-redis/redis/v8 v8.2.3
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.2
@@ -19,5 +18,5 @@ require (
 	github.com/shiningacg/sn-ipfs v0.0.0-20200924124624-1bb5619e1f1a
 	github.com/shirou/gopsutil v2.20.9+incompatible
 	go.etcd.io/etcd v3.3.25+incompatible
-	google.golang.org/grpc v1.29.1
+	google.golang.org/grpc v1.32.0
 )
