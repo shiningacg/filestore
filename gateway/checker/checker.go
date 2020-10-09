@@ -3,6 +3,7 @@ package checker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/go-redis/redis/v8"
 	svc "github.com/shiningacg/ServiceFile"
 	"google.golang.org/grpc"
@@ -76,9 +77,11 @@ func (c *RedisChecker) Set(result *CheckResult) error {
 }
 
 func NewGrpcChecker(addr string, secret string) (*GrpcChecker, error) {
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	ctx, cf := context.WithTimeout(context.Background(), time.Second)
+	defer cf()
+	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		return nil, err
+		return nil, errors.New("无法建立与checker的连接")
 	}
 	client := svc.NewFileClient(conn)
 	return &GrpcChecker{FileClient: client}, nil

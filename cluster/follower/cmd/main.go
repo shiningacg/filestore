@@ -10,11 +10,11 @@ import (
 )
 
 const (
-	CheckerAddr         = "127.0.0.1:5040"
-	GatewayAddr         = "0.0.0.0:8001"
-	GrpcAddr            = "0.0.0.0:8002"
-	AnnounceGatewayAddr = "127.0.0.1:8001"
-	AnnounceGrpcAddr    = "127.0.0.1:8002"
+	CheckerAddr         = "127.0.0.1:8002"
+	GatewayAddr         = "0.0.0.0:8005"
+	GrpcAddr            = "0.0.0.0:8006"
+	AnnounceGatewayAddr = "127.0.0.1:8005"
+	AnnounceGrpcAddr    = "127.0.0.1:8006"
 )
 
 var config = follower.Config{
