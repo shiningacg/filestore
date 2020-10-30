@@ -11,7 +11,6 @@ import (
 	"github.com/shiningacg/mygin"
 	"io"
 	l "log"
-	"mime/multipart"
 	"net/http"
 	"os"
 )
@@ -19,6 +18,7 @@ import (
 const (
 	GRPC string = "GRPC"
 	HTTP string = "HTTP"
+	MOCK string = "MOCK"
 )
 
 type MyginGateway struct {
@@ -41,6 +41,8 @@ func NewMyginGateway(addr string, checkerType, checkerAddr, checkKey string) (*M
 		err error
 	)
 	switch checkerType {
+	case MOCK:
+		ck = checker.MockChecker{}
 	case GRPC:
 		ck, err = checker.NewGrpcChecker(checkerAddr, checkKey)
 		if err != nil {
@@ -169,18 +171,21 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 	token := ctx.RouterValue("token")
 	checkResult, err := g.checker.Get(token)
 	if err != nil {
+		l.Println("传输失败：无法查询到文件" + token + err.Error())
 		ctx.Status(400)
 		return
 	}
 	// 尝试读取文件
-	file, header, err := g.getFile(ctx.Request)
+	file, err := g.getFile(ctx.Request)
 	if err != nil {
+		l.Println("传输失败：无法获取form文件 " + err.Error())
 		ctx.Status(400)
 		return
 	}
 	// 创建临时文件，可以考虑弄一个函数
 	f, err := os.Create(token)
 	if err != nil {
+		l.Println("传输失败：无法创建临时文件 " + err.Error())
 		ctx.Status(500)
 		return
 	}
@@ -195,17 +200,20 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 	// 开始读取
 	size, err := g.copyWithLimit(checkResult.Size, &mnt.Record{RequestID: token, FileID: token}, f, file)
 	if err == mnt.ErrReachMaxSize {
+		l.Println("传输失败： " + err.Error())
 		// writeError(w, 400, err)
 		ctx.Status(400)
 		return
 	}
 	if err != nil {
 		// writeError(w, 400, ErrReadSocket)
+		l.Println("数据传输错误：" + err.Error())
 		ctx.Status(400)
 		return
 	}
 	if size != checkResult.Size && checkResult.Size != 0 {
 		// 文件大小不对
+		l.Println("传输失败： 文件大小不符合描述")
 		ctx.Status(400)
 		return
 	}
@@ -214,7 +222,7 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 	// 记录信息
 	bs := &fs.BaseFileStruct{}
 	bs.SetUUID(token)
-	bs.SetName(header.Filename)
+	bs.SetName(checkResult.Name)
 	bs.SetSize(size)
 	// 放入仓库中
 	rf := fs.NewReadableFile(bs, f)
@@ -267,10 +275,14 @@ func (g *MyginGateway) copyWithoutLimit(r *mnt.Record, dst io.Writer, src io.Rea
 	return g.monitor.Copy(0, r, dst, src)
 }
 
-func (g *MyginGateway) getFile(r *http.Request) (multipart.File, *multipart.FileHeader, error) {
-	file, header, err := r.FormFile("file")
+func (g *MyginGateway) getFile(r *http.Request) (io.ReadCloser, error) {
+	form, err := r.MultipartReader()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return file, header, nil
+	part, err := form.NextPart()
+	if part.FormName() != "file" {
+		return nil, errors.New("no file found")
+	}
+	return part, nil
 }

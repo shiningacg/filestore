@@ -63,7 +63,11 @@ func NewStore(config Config) (*store, error) {
 		return nil, err
 	}
 	// 创建checker
-	gtw, err := gateway.NewMyginGateway(config.Gateway, gateway.GRPC, config.CheckerAddr, "")
+	var CheckerType = gateway.MOCK
+	if config.CheckerAddr != "" {
+		CheckerType = gateway.GRPC
+	}
+	gtw, err := gateway.NewMyginGateway(config.Gateway, CheckerType, config.CheckerAddr, "")
 	if err != nil {
 		return nil, err
 	}

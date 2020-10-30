@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-redis/redis/v8"
-	svc "github.com/shiningacg/ServiceFile"
+	svc "github.com/shiningacg/Services/code/file"
 	"google.golang.org/grpc"
 	"time"
 )
@@ -133,7 +133,7 @@ func (m MockChecker) Get(token string) (*CheckResult, error) {
 		PostToken: token,
 		UUID:      "test",
 		Name:      "mock",
-		Size:      12,
+		Size:      0,
 	}, nil
 }
 

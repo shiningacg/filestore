@@ -20,7 +20,7 @@ var config = Config{
 	Gateway: GatewayAddr,
 	Plugin: Plugin{
 		AdderAddr:   "",
-		CheckerAddr: CheckerAddr,
+		CheckerAddr: "",
 	},
 }
 
@@ -29,7 +29,6 @@ func TestNewStore(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	store = store
 	store.Run(context.Background())
 }
 
