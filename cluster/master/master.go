@@ -157,7 +157,7 @@ func (m *Master) watch() {
 				if m.nodes.Node(evt.Id) != nil {
 					log.Println("节点离线:", evt.Id)
 				}
-				m.nodes.Delete(evt.Id)
+				m.nodes = m.nodes.Delete(evt.Id)
 			}
 		}
 	}
