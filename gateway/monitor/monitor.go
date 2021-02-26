@@ -185,12 +185,7 @@ func copy(dst io.Writer, src io.Reader, stop func(int) int) (uint64, error) {
 			return 0, ErrReachMaxSize
 			n = remain
 		}
-		if err == io.EOF && n == remain {
-			err = nil
-			total += remain
-			break
-		}
-		if err != nil {
+		if err != nil && err != io.EOF {
 			break
 		}
 		// 写入dst
@@ -206,6 +201,10 @@ func copy(dst io.Writer, src io.Reader, stop func(int) int) (uint64, error) {
 		}
 		// 计算总和
 		total += n
+		if err == io.EOF && n == remain {
+			err = nil
+			break
+		}
 	}
 	// 出现错误
 	if err != nil {

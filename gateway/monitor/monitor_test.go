@@ -106,3 +106,21 @@ func TestCopy(t *testing.T) {
 	buffer := bufio.NewReader(bytes.NewBuffer([]byte("aaa")))
 	NewMonitor().Copy(2, &Record{RequestID: "1"}, f, buffer)
 }
+
+func TestCopyWithLimit(t *testing.T) {
+	f, err := os.Open("/Users/shlande/Pictures/06.webp")
+	if err != nil {
+		panic(err)
+	}
+	stats, _ := f.Stat()
+	w, err := os.Create("./06.webp")
+	if err != nil {
+		panic(err)
+	}
+	mnt := NewMonitor()
+	go mnt.Run(context.Background())
+	n, err := mnt.Copy(uint64(stats.Size()), &Record{RequestID: "1"}, w, f)
+	if int64(n) != stats.Size() {
+		panic(err)
+	}
+}
