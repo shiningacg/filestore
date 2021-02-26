@@ -150,10 +150,10 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 	ctx.Proto()
 	// 设置head为attachment
 	writer := ctx.Write
-	writer.WriteHeader(200)
 	// 设置响应头
 	writer.Header().Set("Content-Length", fmt.Sprint(copySize))
 	writer.Header().Set("Content-Disposition", "attachment; filename="+file.Name())
+	writer.WriteHeader(200)
 	// 开始传输文件
 	_, err = g.copyWithLimit(uint64(copySize), &mnt.Record{RequestID: requestID, FileID: fid}, writer, file)
 	if err != nil && err != mnt.ErrReachMaxSize {
