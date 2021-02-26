@@ -174,14 +174,20 @@ func copy(dst io.Writer, src io.Reader, stop func(int) int) (uint64, error) {
 	var err error
 	// 创建缓存
 	var buffer = make([]byte, 1024)
-	for remain := stop(n); remain > 0; {
+	for {
+		remain := stop(n)
+		if remain <= 0 {
+			break
+		}
 		var wt, w int
 		n, err = src.Read(buffer)
 		if n > remain {
+			return 0, ErrReachMaxSize
 			n = remain
 		}
-		if err == io.EOF {
+		if err == io.EOF && n == remain {
 			err = nil
+			total += remain
 			break
 		}
 		if err != nil {

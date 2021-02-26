@@ -16,7 +16,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.2
 	github.com/shiningacg/Services v0.0.0-00010101000000-000000000000
-	github.com/shiningacg/mygin v0.0.0-20201003081440-00529e907d03
+	github.com/shiningacg/mygin v0.0.0-20210226044701-8d72db96c275
 	github.com/shiningacg/mygin-frame-libs v0.0.0-20200801133652-d3ee76596824
 	github.com/shiningacg/sn-ipfs v0.0.0-20200924124624-1bb5619e1f1a
 	github.com/shirou/gopsutil v2.20.9+incompatible

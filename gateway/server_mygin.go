@@ -122,7 +122,8 @@ func (g *MyginGateway) LoadRouter(engine *mygin.Engine) {
 	// TODO： 添加header方法支持，提前查询文件大小
 	r.Get("/download/:fid").Do(g.Download)
 	r.Head("/download/:fid").Do(g.DownloadHead)
-	r.Post("/upload/:token").Use().Do(g.Upload)
+	r.Post("/upload/:token").Use(g.CORS).Do(g.Upload)
+	r.Options("/upload/:token").Do(g.CORS)
 }
 
 // TODO：如果有session则进行记录
@@ -285,4 +286,11 @@ func (g *MyginGateway) getFile(r *http.Request) (io.ReadCloser, error) {
 		return nil, errors.New("no file found")
 	}
 	return part, nil
+}
+
+func (g *MyginGateway) CORS(ctx *mygin.Context) {
+	ctx.Header("Access-Control-Allow-Origin", "*")
+	ctx.Header("Access-Control-Allow-Credentials", "true")
+	ctx.Header("Access-Control-Allow-Methods", "*")
+	ctx.Header("Access-Control-Allow-Headers", "*")
 }

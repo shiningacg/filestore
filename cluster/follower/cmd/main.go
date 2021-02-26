@@ -10,11 +10,11 @@ import (
 )
 
 const (
-	CheckerAddr         = "127.0.0.1:8002"
+	CheckerAddr         = "192.168.1.14:8002"
 	GatewayAddr         = "0.0.0.0:8005"
 	GrpcAddr            = "0.0.0.0:8006"
-	AnnounceGatewayAddr = "127.0.0.1:8005"
-	AnnounceGrpcAddr    = "127.0.0.1:8006"
+	AnnounceGatewayAddr = "192.168.1.14:8005"
+	AnnounceGrpcAddr    = "192.168.1.14:8006"
 )
 
 var config = follower.Config{
@@ -27,7 +27,7 @@ var config = follower.Config{
 			CheckerAddr: CheckerAddr,
 		},
 	},
-	Etcd: []string{"127.0.0.1:2379"},
+	Etcd: []string{"192.168.1.14:2379"},
 	Service: cluster.Service{
 		Name: "svc.file",
 		Id:   "test",
@@ -67,7 +67,7 @@ func main() {
 
 func ConnectEtcd() *clientv3.Client {
 	cl, err := clientv3.New(clientv3.Config{
-		Endpoints: []string{"127.0.0.1:2379"},
+		Endpoints: []string{"192.168.1.14:2379"},
 	})
 	if err != nil {
 		panic(err)
