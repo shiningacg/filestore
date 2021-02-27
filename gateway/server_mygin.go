@@ -131,6 +131,10 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 	// 尝试获取uuid
 	requestID := ctx.Value("RequestID").(string)
 	fid := ctx.RouterValue("fid")
+	// 设置为原生操作
+	ctx.Proto()
+	writer := ctx.Write
+
 	file, err := g.fs.Get(fid)
 	if err != nil {
 		fmt.Println(err)
@@ -138,22 +142,41 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 		return
 	}
 	// 获取要发送的文件范围
-	// -1 为取无穷
-	rg := ParseRange(ctx.Request.Header.Get("Range"))
-	copySize := rg[1] - rg[0]
+	rgHead := ctx.Request.Header.Get("Range")
+	rg := ParseRange(rgHead)
+	if rg == nil {
+		writer.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+		l.Println("无效的文件区间:", rgHead)
+		return
+	}
+	if rg[1] == 0 {
+		rg[1] = int(file.Size() - 1)
+	}
+	copySize := rg[1] - rg[0] + 1
 	if copySize <= 0 {
 		copySize = int(file.Size())
 	}
 	// 调整读取位置
-	file.Seek(int64(rg[0]), io.SeekStart)
-	// 设置为原生操作
-	ctx.Proto()
-	// 设置head为attachment
-	writer := ctx.Write
+	_, err = file.Seek(int64(rg[0]), io.SeekStart)
+	if err != nil {
+		writer.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+		l.Println("无效的文件区间")
+		return
+	}
+	var statusCode int
 	// 设置响应头
 	writer.Header().Set("Content-Length", fmt.Sprint(copySize))
+	writer.Header().Set("Accept-ranges", "bytes")
 	writer.Header().Set("Content-Disposition", "attachment; filename="+file.Name())
-	writer.WriteHeader(200)
+	if ctx.Request.Header.Get("Range") != "" {
+		writer.Header().Set("Content-Range", fmt.Sprintf("bytes %v-%v/%v", rg[0], rg[1], file.Size()))
+		fmt.Printf("bytes %v-%v/%v %v\n", rg[0], rg[1], file.Size(), copySize)
+		statusCode = http.StatusPartialContent
+	}
+	if statusCode == 0 {
+		statusCode = http.StatusOK
+	}
+	writer.WriteHeader(statusCode)
 	// 开始传输文件
 	_, err = g.copyWithLimit(uint64(copySize), &mnt.Record{RequestID: requestID, FileID: fid}, writer, file)
 	if err != nil && err != mnt.ErrReachMaxSize {

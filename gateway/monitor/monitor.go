@@ -181,8 +181,8 @@ func copy(dst io.Writer, src io.Reader, stop func(int) int) (uint64, error) {
 		}
 		var wt, w int
 		n, err = src.Read(buffer)
+		// 如果读取到的大于还需要写入的，那么控制写入长度
 		if n > remain {
-			return 0, ErrReachMaxSize
 			n = remain
 		}
 		if err != nil && err != io.EOF {

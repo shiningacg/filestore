@@ -18,7 +18,7 @@ require (
 	github.com/shiningacg/Services v0.0.0-00010101000000-000000000000
 	github.com/shiningacg/mygin v0.0.0-20210226044701-8d72db96c275
 	github.com/shiningacg/mygin-frame-libs v0.0.0-20200801133652-d3ee76596824
-	github.com/shiningacg/sn-ipfs v0.0.0-20200924124624-1bb5619e1f1a
+	github.com/shiningacg/sn-ipfs v0.0.0-20210227032833-6c43a1bf428b
 	github.com/shirou/gopsutil v2.20.9+incompatible
 	go.etcd.io/etcd v3.3.25+incompatible
 	google.golang.org/grpc v1.32.0
