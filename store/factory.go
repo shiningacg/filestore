@@ -93,7 +93,7 @@ func newCore(config *Config, logger *log.Logger) (Core, error) {
 	}
 	switch config.Type {
 	case IPFS:
-		return ipfs.NewCore(logger)
+		return ipfs.NewReadWithGatewayStore(logger)
 	case OS:
 		return os.NewCore(config.Path, logger)
 	}

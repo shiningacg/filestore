@@ -11,7 +11,7 @@ import (
 
 func TestNewMaster(t *testing.T) {
 	client, err := clientv3.New(clientv3.Config{
-		Endpoints: []string{"127.0.0.1:2379"},
+		Endpoints: []string{"192.168.1.14:2379"},
 	})
 	if err != nil {
 		panic(err)
