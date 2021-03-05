@@ -82,12 +82,6 @@ func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.R
 		// 剩余内容
 		return remain
 	})
-	if closer, ok := dst.(io.Closer); ok {
-		closer.Close()
-	}
-	if closer, ok := src.(io.Closer); ok {
-		closer.Close()
-	}
 	b.AddRecord(&Record{RequestID: r.RequestID, EndTime: uint64(time.Now().Unix())})
 	if n > maxSize && maxSize != 0 {
 		return n, ErrReachMaxSize

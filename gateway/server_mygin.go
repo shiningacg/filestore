@@ -179,6 +179,12 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 	writer.WriteHeader(statusCode)
 	// 开始传输文件
 	_, err = g.copyWithLimit(uint64(copySize), &mnt.Record{RequestID: requestID, FileID: fid}, writer, file)
+	if closer, ok := writer.(io.Closer); ok {
+		closer.Close()
+	}
+	if closer, ok := file.(io.Closer); ok {
+		closer.Close()
+	}
 	if err != nil && err != mnt.ErrReachMaxSize {
 		// 判断socket是否关闭
 		// 打日志
