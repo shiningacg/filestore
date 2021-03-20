@@ -12,7 +12,6 @@ import (
 	"io"
 	l "log"
 	"net/http"
-	"os"
 )
 
 const (
@@ -28,7 +27,7 @@ type MyginGateway struct {
 	// 上传监控器
 	checker checker.Checker
 	// 流量监控器
-	monitor *mnt.DefaultMonitor
+	monitor mnt.Monitor
 	// 监听地址
 	addr string
 	// 存放文件的仓库，能够通过id存放和获取文件
@@ -65,7 +64,15 @@ func DesignMyginGateway(addr string, checker checker.Checker) *MyginGateway {
 
 // 获取统计信息
 func (g *MyginGateway) BandWidth() *fs.Bandwidth {
-	return g.monitor.Bandwidth()
+	stats := g.monitor.Stats()
+	return &fs.Bandwidth{
+		Visit:         0,
+		DayVisit:      0,
+		HourVisit:     0,
+		Bandwidth:     stats.Out.Total,
+		DayBandwidth:  stats.Out.Day,
+		HourBandwidth: stats.Out.Hour,
+	}
 }
 
 func (g *MyginGateway) SetStore(store fs.FileFS) {
@@ -108,7 +115,6 @@ func (g *MyginGateway) Run(ctx context.Context) error {
 		return errors.New("服务已经在运行")
 	}
 	g.ctx = ctx
-	go g.monitor.Run(ctx)
 	err := http.ListenAndServe(g.addr, g.Engine)
 	if err != nil {
 		return err
@@ -141,6 +147,7 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 		ctx.Status(404)
 		return
 	}
+	defer file.Close()
 	// 获取要发送的文件范围
 	rgHead := ctx.Request.Header.Get("Range")
 	rg := ParseRange(rgHead)
@@ -178,13 +185,9 @@ func (g *MyginGateway) Download(ctx *mygin.Context) {
 	}
 	writer.WriteHeader(statusCode)
 	// 开始传输文件
-	_, err = g.copyWithLimit(uint64(copySize), &mnt.Record{RequestID: requestID, FileID: fid}, writer, file)
-	if closer, ok := writer.(io.Closer); ok {
-		closer.Close()
-	}
-	if closer, ok := file.(io.Closer); ok {
-		closer.Close()
-	}
+	wt := g.monitor.Out(writer, requestID, 0)
+	defer wt.Close()
+	_, err = io.Copy(wt, file)
 	if err != nil && err != mnt.ErrReachMaxSize {
 		// 判断socket是否关闭
 		// 打日志
@@ -212,50 +215,15 @@ func (g *MyginGateway) Upload(ctx *mygin.Context) {
 		ctx.Status(400)
 		return
 	}
-	// 创建临时文件，可以考虑弄一个函数
-	f, err := os.Create(token)
-	if err != nil {
-		l.Println("传输失败：无法创建临时文件 " + err.Error())
-		ctx.Status(500)
-		return
-	}
-	// 删除缓存文件
-	defer func() {
-		f.Close()
-		err = os.Remove(token)
-		if err != nil {
-			l.Fatal(err)
-		}
-	}()
 	// 开始读取
-	size, err := g.copyWithLimit(checkResult.Size, &mnt.Record{RequestID: token, FileID: token}, f, file)
-	if err == mnt.ErrReachMaxSize {
-		l.Println("传输失败： " + err.Error())
-		// writeError(w, 400, err)
-		ctx.Status(400)
-		return
-	}
-	if err != nil {
-		// writeError(w, 400, ErrReadSocket)
-		l.Println("数据传输错误：" + err.Error())
-		ctx.Status(400)
-		return
-	}
-	if size != checkResult.Size && checkResult.Size != 0 {
-		// 文件大小不对
-		l.Println("传输失败： 文件大小不符合描述")
-		ctx.Status(400)
-		return
-	}
-	// 重置文件的读取位置
-	f.Seek(0, io.SeekStart)
+	rd := g.monitor.In(file, checkResult.UUID, int64(checkResult.Size))
 	// 记录信息
 	bs := &fs.BaseFileStruct{}
 	bs.SetUUID(token)
 	bs.SetName(checkResult.Name)
-	bs.SetSize(size)
+	bs.SetSize(checkResult.Size)
 	// 放入仓库中
-	rf := fs.NewReadableFile(bs, f)
+	rf := fs.NewReadableFile(bs, rd)
 	err = g.fs.Add(rf)
 	if err != nil {
 		l.Fatal(err)
@@ -293,16 +261,6 @@ func (g *MyginGateway) RequestID(ctx *mygin.Context) {
 	ctx.Set("RequestID", rid)
 	ctx.Next()
 	// 写入到数据库中
-}
-
-// copyWithLimit 复制内容，但大小不会超过MaxUploadSize
-func (g *MyginGateway) copyWithLimit(maxSize uint64, r *mnt.Record, dst io.Writer, src io.Reader) (uint64, error) {
-	return g.monitor.Copy(maxSize, r, dst, src)
-}
-
-// copyWithLimit 复制内容，大小不受限制
-func (g *MyginGateway) copyWithoutLimit(r *mnt.Record, dst io.Writer, src io.Reader) (uint64, error) {
-	return g.monitor.Copy(0, r, dst, src)
 }
 
 func (g *MyginGateway) getFile(r *http.Request) (io.ReadCloser, error) {

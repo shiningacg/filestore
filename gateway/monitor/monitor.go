@@ -103,18 +103,22 @@ func (m *monitor) timer() {
 // 进行100ms后的操作
 func (m *monitor) doAfterSleep() {
 	// 前进并且清空上一秒的数据
-	m.curSec += 1
-	// 如果满位，则进位
-	if m.curSec >= 10 {
+	if m.curSec < 9 {
+		m.curSec += 1
+	} else {
+		// 如果满位，则进位
 		m.curSec = 0
-		m.curMin += 1
-		if m.curMin >= 60 {
+		if m.curMin < 59 {
+			m.curMin += 1
+		} else {
 			m.curMin = 0
-			m.curHour += 1
-			if m.curHour >= 60 {
+			if m.curHour < 59 {
+				m.curHour += 1
+			} else {
 				m.curHour = 0
-				m.curDay += 1
-				if m.curDay >= 24 {
+				if m.curDay < 23 {
+					m.curDay += 1
+				} else {
 					m.curDay = 0
 				}
 				m.dayIn[m.curDay] = 0
