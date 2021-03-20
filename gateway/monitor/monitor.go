@@ -1,9 +1,8 @@
 package monitor
 
 import (
-	"context"
 	"errors"
-	"github.com/shiningacg/filestore"
+	"github.com/google/uuid"
 	"io"
 	"time"
 )
@@ -17,208 +16,284 @@ var (
 	ErrReachMaxSize = errors.New("超过数据大小限制")
 )
 
-// GatewayMonitor是通用的模块，用来处理http网关返回的信息
-type DefaultMonitor struct {
-	// 统计总共的访问数据，每天和小时数据是计算生成的
-	visit     uint64
-	bandwidth uint64
-	// 输入
-	ctx context.Context
-	// 保存请求记录
-	records []*Record
-	// 存入记录的chan
-	input  chan *Record
-	closed bool
+// Monitor 负责监控流量，通过包装reader或者writer来监控流量情况
+type Monitor interface {
+	// In 监控流入流量
+	In(reader io.Reader, id string, limit int64) io.ReadCloser
+	// Out 监控流出流量
+	Out(writer io.Writer, id string, limit int64) io.WriteCloser
+	// 总体数据
+	Stats() *Stats
 }
 
-func (b *DefaultMonitor) Bandwidth() *filestore.Bandwidth {
-	b.delTimeout()
-	calculate := func(rcds []*Record) uint64 {
-		var bandwidth uint64
-		for _, rcd := range rcds {
-			bandwidth += rcd.Bandwidth
-		}
-		return bandwidth
-	}
-	hourRecords := b.getRecord(HOUR)
-	hourBandwidth := calculate(hourRecords)
-	hourVisit := len(hourRecords)
-	dayVisit := len(b.records)
-	dayBandwidth := calculate(b.records)
-	return &filestore.Bandwidth{
-		Visit:         b.visit,
-		DayVisit:      uint64(dayVisit),
-		HourVisit:     uint64(hourVisit),
-		Bandwidth:     b.bandwidth,
-		DayBandwidth:  dayBandwidth,
-		HourBandwidth: hourBandwidth,
-	}
+type Record struct {
+	Id        string
+	Size      uint64
+	In        bool
+	StartTime time.Time
+	EndTime   time.Time
 }
 
-func NewMonitor() *DefaultMonitor {
-	input := make(chan *Record, 100)
-	return &DefaultMonitor{
-		records: make([]*Record, 0, 1000),
-		input:   input,
-	}
+type Stats struct {
+	In  Bandwidth
+	Out Bandwidth
 }
 
-// 协助拷贝数据，同时进行流量记录
-func (b *DefaultMonitor) Copy(maxSize uint64, r *Record, dst io.Writer, src io.Reader) (uint64, error) {
-	var remain = int(maxSize)
-	b.addRecord(&Record{
-		RequestID: r.RequestID,
-		Ip:        r.Ip,
-		FileID:    r.FileID,
-		StartTime: uint64(time.Now().Unix()),
-	})
-	n, err := copy(dst, src, func(i int) int {
-		b.AddRecord(&Record{RequestID: r.RequestID, Bandwidth: uint64(i)})
-		remain -= i
-		// 不设限的copy
-		if maxSize == 0 {
-			return 1024
-		}
-		// 剩余内容
-		return remain
-	})
-	b.AddRecord(&Record{RequestID: r.RequestID, EndTime: uint64(time.Now().Unix())})
-	if n > maxSize && maxSize != 0 {
-		return n, ErrReachMaxSize
-	}
-	return n, err
+type Bandwidth struct {
+	Total uint64
+	// 日流出流量
+	Day uint64
+	// 小时流出流量
+	Hour uint64
+	// 分钟
+	Min uint64
+	// 实时数据
+	Now uint64
 }
 
-// 多线程安全添加记录
-func (b *DefaultMonitor) AddRecord(record *Record) {
-	if b.closed {
-		return
+func NewMonitor() *monitor {
+	m := &monitor{
+		rcds:    make(map[string]*Record),
+		secIn:   make([]int, 10),
+		secOut:  make([]int, 10),
+		minIn:   make([]int, 60),
+		minOut:  make([]int, 60),
+		hourIn:  make([]int, 60),
+		hourOut: make([]int, 60),
+		dayIn:   make([]int, 24),
+		dayOut:  make([]int, 24),
 	}
-	b.input <- record
+	go m.timer()
+	return m
 }
 
-// 启动goroutine单线程处理记录
-func (b *DefaultMonitor) Run(ctx context.Context) {
-	if b.ctx != nil {
-		return
-	}
-	b.ctx = ctx
-	// 开启定时任务
+type monitor struct {
+	rcds map[string]*Record
+	// 总传输
+	totalIn  uint64
+	totalOut uint64
+	// 默认长度为10
+	curSec uint8
+	secIn  []int
+	secOut []int
+	// 默认长度为60
+	curMin uint8
+	minIn  []int
+	minOut []int
+	// 默认长度为60
+	curHour uint8
+	hourIn  []int
+	hourOut []int
+	// 默认长度为24
+	curDay uint8
+	dayIn  []int
+	dayOut []int
+}
+
+func (m *monitor) timer() {
+	t := time.NewTicker(time.Microsecond * 100)
 	for {
 		select {
-		case r := <-b.input:
-			b.addRecord(r)
-		case <-b.ctx.Done():
-			close(b.input)
-			b.closed = true
-			return
+		case <-t.C:
+			go m.doAfterSleep()
 		}
 	}
 }
 
-// addRecord 把输入的record记录下并且及时更新gateway数据
-func (b *DefaultMonitor) addRecord(r *Record) {
-	var record *Record
-	// 通过id查找是否存在过记录,从后开始查询
-	for i := len(b.records) - 1; i >= 0; i-- {
-		// 已经出现过，进行合并
-		if b.records[i].RequestID == r.RequestID {
-			record = b.records[i]
-		}
-	}
-	if record != nil {
-		record.Bandwidth += r.Bandwidth
-		// 传输任务已经完成
-		if r.EndTime != 0 {
-			record.EndTime = r.EndTime
-		}
-	} else {
-		// 添加访问记录
-		b.visit += 1
-		// 新的任务，添加记录
-		b.records = append(b.records, &Record{
-			RequestID: r.RequestID,
-			Ip:        r.Ip,
-			FileID:    r.FileID,
-			Bandwidth: r.Bandwidth,
-			StartTime: r.StartTime,
-			EndTime:   r.EndTime,
-		})
-	}
-	// 添加了流量记录
-	b.bandwidth += r.Bandwidth
-}
-
-// delTimeout 删除过期的信息,同时更新每天数据(默认为一天)
-func (b *DefaultMonitor) delTimeout() {
-	// 一天
-	b.records = b.getRecord(DAY)
-}
-
-// 获取截止日期前的记录
-func (b *DefaultMonitor) getRecord(duration uint64) []*Record {
-	var index int
-	timeline := uint64(time.Now().Unix()) - duration
-	for _, r := range b.records {
-		if r.EndTime > timeline {
-			break
-		}
-		index++
-	}
-
-	return b.records[index:]
-}
-
-func copy(dst io.Writer, src io.Reader, stop func(int) int) (uint64, error) {
-	var n, total int
-	var err error
-	// 创建缓存
-	var buffer = make([]byte, 1024)
-	for {
-		remain := stop(n)
-		if remain <= 0 {
-			break
-		}
-		var wt, w int
-		n, err = src.Read(buffer)
-		// 如果读取到的大于还需要写入的，那么控制写入长度
-		if n > remain {
-			n = remain
-		}
-		if err != nil && err != io.EOF {
-			break
-		}
-		// 写入dst
-		for {
-			w, err = dst.Write(buffer[wt:n])
-			if err != nil {
-				break
+// 进行100ms后的操作
+func (m *monitor) doAfterSleep() {
+	// 前进并且清空上一秒的数据
+	m.curSec += 1
+	// 如果满位，则进位
+	if m.curSec >= 10 {
+		m.curSec = 0
+		m.curMin += 1
+		if m.curMin >= 60 {
+			m.curMin = 0
+			m.curHour += 1
+			if m.curHour >= 60 {
+				m.curHour = 0
+				m.curDay += 1
+				if m.curDay >= 24 {
+					m.curDay = 0
+				}
+				m.dayIn[m.curDay] = 0
+				m.dayOut[m.curDay] = 0
 			}
-			wt += w
-			if wt == n {
-				break
-			}
+			m.hourIn[m.curHour] = 0
+			m.hourOut[m.curHour] = 0
 		}
-		// 计算总和
-		total += n
-		if err == io.EOF && n == remain {
-			err = nil
-			break
-		}
+		m.minIn[m.curMin] = 0
+		m.minOut[m.curMin] = 0
 	}
-	// 出现错误
+	m.secIn[m.curSec] = 0
+	m.secOut[m.curSec] = 0
+}
+
+func (m *monitor) In(reader io.Reader, id string, limit int64) io.ReadCloser {
+	if id == "" {
+		id = uuid.New().String()
+	}
+	return &rw{
+		Reader: reader,
+		limit:  limit,
+		r:      m.new(id, true),
+		m:      m,
+	}
+}
+
+func (m *monitor) Out(writer io.Writer, id string, limit int64) io.WriteCloser {
+	if id == "" {
+		id = uuid.New().String()
+	}
+	return &rw{
+		Writer: writer,
+		limit:  limit,
+		r:      m.new(id, false),
+		m:      m,
+	}
+}
+
+func (m *monitor) add(size int, in bool) {
+	// 操作流量记录
+	if in {
+		m.totalIn += uint64(size)
+		m.secIn[m.curSec] += size
+		m.minIn[m.curSec] += size
+		m.hourIn[m.curSec] += size
+		return
+	}
+	m.totalOut += uint64(size)
+	m.secOut[m.curSec] += size
+	m.minOut[m.curSec] += size
+	m.hourOut[m.curSec] += size
+}
+
+func (m *monitor) new(id string, in bool) *Record {
+	var rcd = &Record{
+		Id:        id,
+		In:        in,
+		Size:      0,
+		StartTime: time.Now(),
+		EndTime:   time.Time{},
+	}
+	m.rcds[id] = rcd
+	return rcd
+}
+
+func (m *monitor) Delete(id string) {
+	delete(m.rcds, id)
+}
+
+func (m *monitor) Stats() *Stats {
+	var secIn, secOut, minIn, minOut, hourIn, hourOut, dayIn, dayOut uint64
+	for _, v := range m.secIn {
+		secIn += uint64(v)
+	}
+	for _, v := range m.secOut {
+		secOut += uint64(v)
+	}
+	for _, v := range m.minIn {
+		minIn += uint64(v)
+	}
+	for _, v := range m.minOut {
+		minOut += uint64(v)
+	}
+	for _, v := range m.hourIn {
+		hourIn += uint64(v)
+	}
+	for _, v := range m.hourOut {
+		hourOut += uint64(v)
+	}
+	for _, v := range m.dayIn {
+		dayIn += uint64(v)
+	}
+	for _, v := range m.dayOut {
+		dayOut += uint64(v)
+	}
+	return &Stats{
+		In: Bandwidth{
+			Total: m.totalIn,
+			Day:   dayIn,
+			Hour:  hourIn,
+			Min:   minIn,
+			Now:   secIn,
+		},
+		Out: Bandwidth{
+			Total: m.totalOut,
+			Day:   dayOut,
+			Hour:  hourOut,
+			Min:   minOut,
+			Now:   secOut,
+		},
+	}
+}
+
+type rw struct {
+	limit int64
+	cache []byte
+	io.Reader
+	io.Writer
+	r *Record
+	m *monitor
+}
+
+func (r *rw) Read(p []byte) (n int, err error) {
+	if r.cache == nil {
+		r.cache = r.makeBestCache(p)
+	}
+	n, err = r.Reader.Read(r.cache)
 	if err != nil {
 		return 0, err
 	}
-	return uint64(total), nil
+	// 限制大小
+	if r.limit != 0 && uint64(r.limit) < r.r.Size+uint64(n) {
+		return 0, ErrReachMaxSize
+	}
+	n = copy(p, r.cache[:n])
+	r.add(int64(n))
+	return n, nil
 }
 
-// Record 单次反馈数据
-type Record struct {
-	RequestID string
-	Ip        string
-	FileID    string
-	Bandwidth uint64
-	StartTime uint64
-	EndTime   uint64
+func (r *rw) Write(p []byte) (n int, err error) {
+	if r.cache == nil {
+		r.cache = r.makeBestCache(p)
+	}
+	// 剩下的内容比预期更多
+	if r.limit != 0 && len(p) > int(r.limit)-int(r.r.Size) {
+		return 0, ErrReachMaxSize
+	}
+	n, err = r.Writer.Write(p)
+	if err != nil {
+		return 0, err
+	}
+	r.m.add(n, true)
+	return n, nil
+}
+
+func (r *rw) add(size int64) {
+	r.r.Size += uint64(size)
+	r.m.add(int(size), r.r.In)
+}
+
+func (r *rw) makeBestCache(dst []byte) []byte {
+	if size := len(dst); size < 2048*32*2 {
+		return make([]byte, size)
+	}
+	return make([]byte, 2048*32)
+}
+
+func (r *rw) Close() error {
+	if r.Reader != nil {
+		if closer, ok := r.Reader.(io.Closer); ok {
+			return closer.Close()
+		}
+	}
+	if r.Writer != nil {
+		if closer, ok := r.Writer.(io.Closer); ok {
+			return closer.Close()
+		}
+	}
+	r.r.EndTime = time.Now()
+	return nil
 }
